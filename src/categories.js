@@ -16,7 +16,6 @@
 
 /*
  * Expand category name to name set.
- * カテゴリ名を展開する
  */
 function expandCategories(categories, categoryName) {
     let foundNames = new Set();
