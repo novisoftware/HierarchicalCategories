@@ -16,6 +16,7 @@
 
 /*
  * Expand category name to name set.
+ * (trace down)
  */
 function expandCategories(categories, categoryName) {
     let foundNames = new Set();
