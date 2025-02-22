@@ -27,7 +27,6 @@ function expandCategories(categories, categoryName) {
 
     while (true) {
         let isChanged = false;
-        const addNames = new Set();
 
         categories.forEach(obj => {
             const currentName = obj["name"];
@@ -48,7 +47,7 @@ function expandCategories(categories, categoryName) {
                     const beforeN = foundNames.size;
                     foundNames = new Set([...foundNames, ...obj["children"]]);
                     const afterN = foundNames.size;
-                    if (beforeN != afterN) {
+                    if (beforeN !== afterN) {
                         isChanged = true;
                     }
                 }
@@ -62,4 +61,58 @@ function expandCategories(categories, categoryName) {
     return foundNames;
 }
 
-export {expandCategories};
+/*
+ * Expand category name to name set.
+ * (trace up)
+ */
+function traceUpCategory(categories, categoryName) {
+    let foundNames = new Set();
+    if (categories.filter(obj => obj["name"] === categoryName) === 0) {
+        return foundNames;
+    }
+    foundNames.add(categoryName);
+
+    // 幅優先探索で上位カテゴリを洗い出す
+    while (true) {
+        let isChanged = false;
+        const addNames = new Set();
+
+        categories.forEach(obj => {
+            const currentName = obj["name"];
+            if ("parents" in obj) {
+                foundNames.forEach(foundName => {
+                    if (currentName === foundName) {
+                        const beforeN = foundNames.size;
+                        foundNames = new Set([...foundNames, ...obj["parents"]]);
+                        const afterN = foundNames.size;
+                        if (beforeN !== afterN) {
+                            isChanged = true;
+                        }
+                    }
+                });
+            }
+
+            if ("children" in obj) {
+                if (! currentName in foundNames) {
+                    if (obj["children"].intersect(foundNames).length > 0) {
+                        isChanged = true;
+                        foundNames.add(currentName);
+                    }
+                }
+            }
+        });
+        if (! isChanged) {
+            break;
+        }
+    }
+
+    return foundNames;
+}
+
+function superordinateCategory(categories, categoryName) {
+    const work = traceUpCategory(categories, categoryName);
+    work.delete(categoryName);
+    return work;
+}
+
+export {expandCategories, traceUpCategory, superordinateCategory};

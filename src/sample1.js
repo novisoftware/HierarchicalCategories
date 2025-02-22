@@ -1,4 +1,4 @@
-import { expandCategories } from "./categories.js";
+import { expandCategories, traceUpCategory } from "./categories.js";
 
 const sampleCategories1 = [
     {
@@ -44,7 +44,13 @@ const sampleCategories1 = [
 
 console.log("mammal ... ")
 console.log(expandCategories(sampleCategories1, "mammal"))
+console.log("mammal (trace up) ... ")
+console.log(traceUpCategory(sampleCategories1, "mammal"))
 console.log("human ... ")
 console.log(expandCategories(sampleCategories1, "human"))
+console.log("human (trace up) ...")
+console.log(traceUpCategory(sampleCategories1, "human"))
 console.log("plant ...")
 console.log(expandCategories(sampleCategories1, "plant"))
+console.log("plant (trace up) ...")
+console.log(traceUpCategory(sampleCategories1, "plant"))
