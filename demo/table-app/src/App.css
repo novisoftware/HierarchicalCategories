@@ -1,0 +1,81 @@
+/*
+「このReactアプリケーションをWikipediaに似せた外観にしたいです。
+  cssを提案してください。」
+*/
+
+.App {
+  text-align: left;
+  font-family: 'Georgia', 'Times New Roman', Times, serif;
+  background-color: #f8f9fa;
+  color: #202122;
+  padding: 20px;
+}
+
+.App-header {
+  background-color: #ffffff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  font-size: 16px;
+  color: #202122;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.5em;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  border: 1px solid #a2a9b1;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #eaecf0;
+}
+
+a {
+  color: #0645ad;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  background-color: #f8f9fa;
+  border: 1px solid #a2a9b1;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+button:hover {
+  background-color: #eaecf0;
+}
+
+span {
+  cursor: pointer;
+  color: #0645ad;
+}
+
+span:hover {
+  text-decoration: underline;
+}
