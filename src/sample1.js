@@ -1,4 +1,4 @@
-import { expandCategories, traceUpCategory } from "./categories.js";
+import { expandCategories, traceUpCategory, topologicalSort } from "./categories.js";
 
 const sampleCategories1 = [
     {
@@ -54,3 +54,9 @@ console.log("plant ...")
 console.log(expandCategories(sampleCategories1, "plant"))
 console.log("plant (trace up) ...")
 console.log(traceUpCategory(sampleCategories1, "plant"))
+
+const ts_result = topologicalSort(sampleCategories1)
+console.log("topological sorted (sorted list) ...")
+console.log(ts_result["sortedList"])
+console.log("topological sorted (left set) ...")
+console.log(ts_result["leftSet"])

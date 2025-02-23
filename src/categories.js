@@ -94,7 +94,7 @@ function traceUpCategory(categories, categoryName) {
 
             if ("children" in obj) {
                 if (! currentName in foundNames) {
-                    if (obj["children"].intersect(foundNames).length > 0) {
+                    if (obj["children"].intersect(foundNames).size > 0) {
                         isChanged = true;
                         foundNames.add(currentName);
                     }
@@ -109,10 +109,95 @@ function traceUpCategory(categories, categoryName) {
     return foundNames;
 }
 
+/*
+ * 上位カテゴリを洗い出す
+ */
 function superordinateCategory(categories, categoryName) {
     const work = traceUpCategory(categories, categoryName);
     work.delete(categoryName);
     return work;
 }
 
-export {expandCategories, traceUpCategory, superordinateCategory};
+/*
+ * 辞書の形式に変換するユーティリティ
+ */
+function makeDict(categories) {
+    // 辞書(キー: 自ノード、 値: 子ノードの集合)
+    const childDict = {};
+    // 辞書(キー: 自ノード、 値: 親ノードの集合)
+    const parentDict = {};
+    categories.forEach(category => {
+        const selfName = category['name'];
+        if (!(selfName in childDict)) {
+            childDict[selfName] = new Set();
+        }
+        if (!(selfName in parentDict)) {
+            parentDict[selfName] = new Set();
+        }
+        if ('parents' in category) {
+            parentDict[selfName] = parentDict[selfName].union(new Set(category['parents']));           
+
+            category['parents'].forEach(parent => {
+                if (parent in childDict) {
+                    childDict[parent].add(selfName);
+                } else {
+                    childDict[parent] = new Set(selfName);
+                }
+            });
+        }
+
+        if ('children' in category) {
+            childDict[selfName] = childDict[selfName].union(new Set(category['children']));
+
+            category['children'].forEach(child => {
+                if (child in parentDict) {
+                    parentDict[child].add(selfName);
+                } else {
+                    parentDict[child] = new Set(selfName);
+                }
+            });            
+        }
+    });
+
+    return {"parentDict": parentDict, "childDict": childDict};
+}
+
+/*
+ * トポロジカルソートを行うユーティリティ。
+ * 閉路の有無を点検するために使用する。
+ */
+function topologicalSort(categories) {
+    const dict = makeDict(categories);
+    const parentDict = dict["parentDict"];
+    const sorted = [];
+    const foundSet = new Set();
+
+    while (true) {
+        let isChanged = false;
+        for (let [cateName, parentNameSet] of Object.entries(parentDict)) {
+            if (foundSet.has(cateName)) {
+                continue;
+            }
+            if (!parentNameSet.isSubsetOf(foundSet)) {
+                continue;
+            }
+            foundSet.add(cateName);
+            sorted.push(cateName);
+            isChanged = true;
+        };
+        if (! isChanged) {
+            break;
+        }
+    }
+
+    const parentdictKeys = Object.keys(parentDict);
+
+    console.log("Set(parentDict.keys)", parentdictKeys);
+
+    const left = new Set(parentdictKeys).difference(new Set(sorted));
+
+    return {"sortedList": sorted, "leftSet": left};
+}
+
+
+export {expandCategories, traceUpCategory, superordinateCategory, makeDict, topologicalSort};
