@@ -1,4 +1,4 @@
-import { expandCategories, traceUpCategory, topologicalSort } from "./categories.js";
+const { expandCategories, traceUpCategory, topologicalSort } = require('./categories.js');
 
 const sampleCategories1 = [
     {

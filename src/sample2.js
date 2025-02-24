@@ -1,4 +1,4 @@
-import { expandCategories } from "./categories.js";
+const { expandCategories } = require('./categories.js');
 
 const sampleCategories2 = [
     {
