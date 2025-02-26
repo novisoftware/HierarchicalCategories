@@ -69,10 +69,22 @@ function App() {
     }
   };
 
+  const arrayToTag = (array, onClick) => {
+    return array.map((cat, index2) => (
+      <>
+        {comma(index2)}
+        <span key={index2} onClick={() => onClick(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
+          {cat}
+        </span>
+      </>
+    ));
+  }
+
   return (
     <div className="App">
       <header className="App-header">
         <h1>カテゴリによる絞り込みのデモ</h1>
+        これは <a href={"https://github.com/novisoftware/HierarchicalCategories"}>HierarchicalCategories (階層化されたカテゴリの実装例)</a> の使用例のデモです。
         <ul>
           <li>
           Wikipediaのページのうちプログラミング言語に関連したものをいくつか集めてカテゴリを付与しています。
@@ -91,20 +103,13 @@ function App() {
           <div>
             <button onClick={clearFilter}>絞り込み解除</button>
             <p>カテゴリ: {selectedCategory}</p>
-            <p>(上位カテゴリ: {
-            Array.from(superordinateCategory(categories, selectedCategory)).map((cat, index2) => (
-                <>
-                  <>
-                  {comma(index2)}
-                  </>
-                  <span key={index2} onClick={() => filterByCategory(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
-                    {cat}
-                  </span>
-                </>
-              ))
-            }
-        )</p>
-            <p>(該当範囲: { Array.from(expandedCategories).join(', ') /* Array.from(expandCategories(categories, selectedCategory)).join(', ') */ })</p>
+            <p>(上位カテゴリ: {arrayToTag(Array.from(superordinateCategory(categories, selectedCategory)), filterByCategory)})</p>
+            <p>(該当範囲: {Array.from(expandedCategories).join(", ")
+            // 該当範囲をリンク化するのは、カテゴリのデータをもう少し整備してから
+            /*
+            arrayToTag(Array.from(expandedCategories), filterByCategory)
+            */
+         })</p>
           </div>
         )}
         <table>
@@ -119,16 +124,7 @@ function App() {
               <tr key={index}>
                 <td><a href={BASE_URL + item.url} target="_blank" rel="noopener noreferrer">{item.text}</a></td>
                 <td>
-                  {item.category.map((cat, index2) => (
-                    <>
-                      <>
-                      {comma(index2)}
-                      </>
-                      <span key={index2} onClick={() => filterByCategory(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
-                        {cat}
-                      </span>
-                    </>
-                  ))}
+                  {arrayToTag(item.category, filterByCategory)}
                 </td>
               </tr>
             ))}
