@@ -337,7 +337,7 @@ node sample3.js
 
 ### 実行方法
 node.jsがインストールされた環境で、以下のコマンドラインにより実行できます。
-<br> (Windows 10 、Node.js v22.14.0 の環境で動作を確認)
+<br> (Windows 10 、Node.js v22.14.0 の環境で動作を確認しています)
 
 ```
 cd demo
@@ -345,3 +345,5 @@ cd table-app
 npm install
 npm start
 ```
+
+また、デモを https://novisoftware.github.io/demo/HierarchicalCategories/table-app/ に置いています。
