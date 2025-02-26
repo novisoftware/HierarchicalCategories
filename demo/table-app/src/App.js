@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import {expandCategories, superordinateCategory} from './categories.js';
 
+const DEPLOY_URL = 'https://novisoftware.github.io/demo/HierarchicalCategories/table-app/';
+
 function App() {
   const BASE_URL = 'https://ja.wikipedia.org';
   const [data, setData] = useState([]);
@@ -12,7 +14,7 @@ function App() {
 
   useEffect(() => {
     // JSONデータを取得する: カテゴリの定義
-    fetch('/data/categories.json')
+    fetch(`${process.env.PUBLIC_URL}/data/categories.json`)
       .then(response => response.json())
       .then(categories => {
         setCategories(categories);
@@ -21,7 +23,7 @@ function App() {
   }, []);
   useEffect(() => {
     // JSONデータを取得する: 表のデータ
-    fetch('/data/items.json')
+    fetch(`${process.env.PUBLIC_URL}/data/items.json`)
       .then(response => response.json())
       .then(items => {
         items.forEach(obj => {
@@ -89,7 +91,19 @@ function App() {
           <div>
             <button onClick={clearFilter}>絞り込み解除</button>
             <p>カテゴリ: {selectedCategory}</p>
-            <p>(上位カテゴリ: {Array.from(superordinateCategory(categories, selectedCategory)).join(', ')})</p>
+            <p>(上位カテゴリ: {
+            Array.from(superordinateCategory(categories, selectedCategory)).map((cat, index2) => (
+                <>
+                  <>
+                  {comma(index2)}
+                  </>
+                  <span key={index2} onClick={() => filterByCategory(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
+                    {cat}
+                  </span>
+                </>
+              ))
+            }
+        )</p>
             <p>(該当範囲: { Array.from(expandedCategories).join(', ') /* Array.from(expandCategories(categories, selectedCategory)).join(', ') */ })</p>
           </div>
         )}
@@ -105,12 +119,12 @@ function App() {
               <tr key={index}>
                 <td><a href={BASE_URL + item.url} target="_blank" rel="noopener noreferrer">{item.text}</a></td>
                 <td>
-                  {item.category.map((cat, idx) => (
+                  {item.category.map((cat, index2) => (
                     <>
                       <>
-                      {comma(idx)}
+                      {comma(index2)}
                       </>
-                      <span key={idx} onClick={() => filterByCategory(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
+                      <span key={index2} onClick={() => filterByCategory(cat)} style={{ cursor: 'pointer', color: 'blue' }}>
                         {cat}
                       </span>
                     </>
