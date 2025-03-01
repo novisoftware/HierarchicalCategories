@@ -14,14 +14,16 @@ Leaflet.Icon.Default.imagePath =
     '//cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/'
 
 
-function mapDisplay(busstopList, posSeries) {
+function mapDisplay(busstopList, polylineSeries) {
     // 座標の初期値
     let position = [35.158478, 136.938949];
 
-    console.log("配列の長さ", busstopList.length)
+    // console.log("配列の長さ", busstopList.length)
+    /*
     busstopList.forEach((busStop) => {
         console.log("位置", busStop["latitude"], busStop["longitude"])
-    });
+    }
+    */
 
     return (
         <MapContainer center={position} zoom={13}
@@ -49,10 +51,9 @@ function mapDisplay(busstopList, posSeries) {
             </>
             <>
                 {
-                    posSeries.length === 0 ?
-                        <></>
-                    :
-                        <Polyline pathOptions={{"color": "blue"}} positions={posSeries} />
+                    polylineSeries.map(polyline =>
+                        <Polyline pathOptions={{"color": "blue"}} positions={polyline} />
+                    )
                 }
             </>
         </MapContainer>);
@@ -149,25 +150,44 @@ function App() {
             if ((busstopKanaFrom in busStopKanaDict) && (busstopKanaTo in busStopKanaDict)) {
                 const busstopCodeSetFrom = busStopKanaDict[busstopKanaFrom];
                 const busstopCodeSetTo = busStopKanaDict[busstopKanaTo];
-                const r = searchRel2(busstopRelList, "busstop_code1", "busstop_code2", "relation",
+                const r = searchRel2(busstopRelList, "busstopCode1", "busstopCode2", "relation",
                     "next", [], // categoriesは使わない
                     true,
                     false,
                     busstopCodeSetFrom, busstopCodeSetTo)
                 
-                const lineSeries = []
-                    // traceOutput2.push([fromBusStop, toBusStop, rel]);
+                const subSeries = [];
                 const path = r["route"];
                 for (let index = 0; index < path.length; index ++) {
                     const [_, __, rel] = path[index];
-                    workPosSeries.push([busStopCodeDict[rel["busstop_code1_detail"]]["latitude"], busStopCodeDict[rel["busstop_code1_detail"]]["longitude"]]);
-                    console.log("pos", workPosSeries[workPosSeries.length - 1]);
-                    workPosSeries.push([busStopCodeDict[rel["busstop_code2_detail"]]["latitude"], busStopCodeDict[rel["busstop_code2_detail"]]["longitude"]]);
-                    console.log("pos", workPosSeries[workPosSeries.length - 1]);
+                    subSeries.push([busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]]);
+                    console.log("pos", subSeries[workPosSeries.length - 1]);
+                    subSeries.push([busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]]);
+                    console.log("pos", subSeries[workPosSeries.length - 1]);
                 }
+                workPosSeries.push(subSeries);
                 console.log("updated 1", "path.length = ", path.length, "workPosSeries.length = ", workPosSeries.length);
             }
         }
+        else {
+            if (text.match(/^[,\d]+$/) != null) {
+                console.log("経路", text);
+                const routeId = text;
+                const routeData = busstopRelList.filter(rel => {
+                    return rel["systemKey"].startsWith(routeId)});
+                console.log("routeData.length", routeData.length);
+                const work = routeData.map(rel => {
+                    const code1 = rel["busstopCode1Detail"];
+                    const code2 = rel["busstopCode2Detail"];
+                    const latlng1 = busStopCodeDict[code1];
+                    const latlng2 = busStopCodeDict[code2];
+                    return [[latlng1["latitude"], latlng1["longitude"]], [latlng2["latitude"], latlng2["longitude"]]]
+                });
+                // workPosSeries.push([])
+                work.forEach(x => {workPosSeries.push(x)});
+            }
+        }
+
         console.log("updated 0");
         setQueryValue(text);
         setPosSeries(workPosSeries);

@@ -104,7 +104,7 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
                     traceOutput.push(toBusStop);
 
                     // 逆引き辞書を作成
-                    if (!([toBusStop] in fromDict)) {
+                    if (!(toBusStop in fromDict)) {
                         fromDict[toBusStop] = new Set();
                     }
                     fromDict[toBusStop].add([fromBusStop, rel]);
