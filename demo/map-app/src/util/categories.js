@@ -62,7 +62,7 @@ function expandCategories(categories, categoryName) {
 }
 
 
-function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isTransitive, isSymmetric, startSet, goalSet) {
+function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isSymmetric, startSet, goalSet) {
     // specifiedRel に implies される relation の集合を取得する
     const specifiedRelSet = expandCategories(categories, specifiedRel);
 
@@ -80,13 +80,14 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
     let isReached = false;
     let reachNum = 0;
 
-    const fromDict = {};
+    const routeDict = {};
+    const foundNameDict = {}
+    Array.from(startSet).forEach(e => {foundNameDict[e] = 0})
 
-    const traceOutput = [];
-    const foundNameSet = new Set(startSet);
-    foundNameSet.forEach((name) => {
-        traceOutput.push(name);
-    });
+    // ルートの重み(固定値)
+    const FIX_DISTANCE = 1;
+
+    console.log("search start");
 
     const foundGoal = new Set();
     while (true) {
@@ -97,36 +98,35 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
             const fromBusStop = r[0];
             const toBusStop = r[1];
             const rel = r[2];
-            if (foundNameSet.has(fromBusStop)) {
-                if (!foundNameSet.has(toBusStop)) {
+            if (fromBusStop in foundNameDict) {
+                if (!(toBusStop in foundNameDict)) {
                     isChanged = true;
-                    foundNameSet.add(toBusStop);
-                    traceOutput.push(toBusStop);
+                    // スタートからtoBusStopまでの距離
+                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
+                    foundNameDict[toBusStop] = distance;
 
                     // 逆引き辞書を作成
-                    if (!(toBusStop in fromDict)) {
-                        fromDict[toBusStop] = new Set();
+                    if (!(toBusStop in routeDict)) {
+                        routeDict[toBusStop] = {}
                     }
-                    fromDict[toBusStop].add([fromBusStop, rel]);
-
-                    if (goalSet !== null && goalSet.has(toBusStop)) {
-                        foundGoal.add(toBusStop);
-                        isReached = true;
-                        reachNum += 1;
-                    }
+                    routeDict[toBusStop][fromBusStop] = [distance, rel];
+                } else {
+                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
+                    if (foundNameDict[toBusStop] > distance) {
+                        isChanged = true;
+                        foundNameDict[toBusStop] = distance;
+                        routeDict[toBusStop] = {}
+                        routeDict[toBusStop][fromBusStop] = [distance, rel];
+                    };
+                }
+                if (isChanged && goalSet !== null && goalSet.has(toBusStop)) {
+                    foundGoal.add(toBusStop);
+                    isReached = true;
+                    reachNum += 1;
                 }
             }
         }
-        /*
-        if (isReached) {
-            break;
-        }
-        */
-        if (reachNum >= 3) {
-            break;
-        }
-        if (! isTransitive) {
-            // 関係が推移性を持たないときは繰り返さない
+        if (reachNum > 0) {
             break;
         }
         if (! isChanged) {
@@ -134,12 +134,14 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
             break;
         }
 
-        console.log("foundNameSet.size", foundNameSet.size);
+        console.log("foundNameDict.size", foundNameDict.size);
     }
+
+    console.log("search end");
 
     // 得られた経路はゴールに到着しないものを含むツリー状になっている。
     // ゴールから逆順に辿る。
-    // foundGoalを起点としてfromDictを遡る
+    // foundGoalを起点としてrouteDictを遡る
     const traceOutput2 = [];
     const foundNameSet2 = new Set(foundGoal);
     const foundRouteSet = new Set();
@@ -147,12 +149,15 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
     while(true) {
         let isChanged = false;
         foundNameSet2.forEach((toBusStop) => {
-            if ([toBusStop] in fromDict) {
-                fromDict[toBusStop].forEach(([fromBusStop, rel]) => {
+            if (toBusStop in routeDict) {
+                for (let fromBusStop in routeDict[toBusStop]) {
+                    const [distance, rel] = routeDict[toBusStop][fromBusStop];
                     // 注: JavaScriptのタプルはキーとして使えない
-                    if (!foundRouteSet.has(fromBusStop + "\n" + toBusStop /*, rel */)) {
+                    const keyStr = fromBusStop + "\n" + toBusStop;
+
+                    if (!foundRouteSet.has(keyStr)) {
                         isChanged = true;
-                        foundRouteSet.add(fromBusStop + "\n" + toBusStop /*, rel */);
+                        foundRouteSet.add(keyStr);
                         traceOutput2.push([fromBusStop, toBusStop, rel]);
                     }
                     console.log("trace2 fromBusStop", fromBusStop);
@@ -160,8 +165,7 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
                     console.log("foundRouteSet.size", foundRouteSet.size);                   
 
                     foundNameSet2.add(fromBusStop);
-            }
-                );
+                }
             }
         });
         if (! isChanged) {

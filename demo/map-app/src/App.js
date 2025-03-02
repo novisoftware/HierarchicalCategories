@@ -80,7 +80,6 @@ function App() {
     console.log("App()");
 
     if (busStopCodeArray.length === 0) {
-        console.log("check 1");
         fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-latitude-longitude.csv`)
             .then(response => response.text())
             .then(csv => {
@@ -94,7 +93,6 @@ function App() {
             .catch(error => console.error('Error fetching data:', error));
     }
     if (Object.keys(busstopUrlDict).length === 0) {
-        console.log("check 2");
         fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-url.csv`)
             .then(response => response.text())
             .then(csv => {
@@ -105,7 +103,6 @@ function App() {
     }
 
     if (busSystemArray.length === 0) {
-        console.log("check 3");
         fetch(`${process.env.PUBLIC_URL}/data/bus/bus-startend.csv`)
             .then(response => response.text())
             .then(csv => {
@@ -117,7 +114,6 @@ function App() {
     }
 
     if (busstopOrderList.length === 0) {
-        console.log("check 4");
         fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-order.csv`)
             .then(response => response.text())
             .then(csv => {
@@ -152,8 +148,7 @@ function App() {
                 const busstopCodeSetTo = busStopKanaDict[busstopKanaTo];
                 const r = searchRel2(busstopRelList, "busstopCode1", "busstopCode2", "relation",
                     "next", [], // categoriesは使わない
-                    true,
-                    false,
+                    false, // 対称的な関係ではない
                     busstopCodeSetFrom, busstopCodeSetTo)
                 
                 const subSeries = [];
