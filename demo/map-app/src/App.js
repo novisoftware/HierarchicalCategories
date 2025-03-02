@@ -211,6 +211,9 @@ function App() {
     }
 
     return (<>
+        <h3>名古屋市の市バスを調べる</h3>
+        アルゴリズムの紹介の意味で名古屋市の市バスの経路探索を実演します。<br/>
+        名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="./public/data/bus/LICENSE.txt" target="_blank">詳細</a>)<br/>
         <input value={text} style={{"width": "200px"}} onChange={(event) => { setText(event.target.value) }} />
         <button onClick={() => { updateQueryValue(text) }}>ボタン</button>
         <br />
