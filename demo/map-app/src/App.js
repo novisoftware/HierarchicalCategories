@@ -1,64 +1,20 @@
 // import logo from './logo.svg';
 // import React, { useEffect, useState } from 'react';
 import Leaflet from 'leaflet'
-import React, { Component, useEffect, useState } from 'react';
+import React, { Component, useEffect, useState, memo, useRef } from 'react';
 import './App.css';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 // import MapDisplay from './Map.js'
 // import {expandCategories, superordinateCategory} from './categories.js';
-import { read_busstop_latitude_longitude, read_bus_system, read_busstop_order, read_busstop_url} from './util/bus.js';
+import { read_busstop_latitude_longitude, read_bus_system, read_busstop_order, read_busstop_url } from './util/bus.js';
 import { searchRel2 } from './util/categories.js';
+import { mapDisplay } from './util/map.js';
+import mermaid from 'mermaid';
 
-Leaflet.Icon.Default.imagePath =
-    '//cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/'
-
-
-function mapDisplay(busstopList, polylineSeries) {
-    // 座標の初期値
-    let position = [35.158478, 136.938949];
-
-    // console.log("配列の長さ", busstopList.length)
-    /*
-    busstopList.forEach((busStop) => {
-        console.log("位置", busStop["latitude"], busStop["longitude"])
-    }
-    */
-
-    return (
-        <MapContainer center={position} zoom={13}
-            boxZoom={true}
-            doubleClickZoom={false}
-            maxZoom={18}
-            scrollWheelZoom={true}
-        >
-            <TileLayer
-                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <>
-                {
-                    busstopList.map(busStop =>
-                        <Marker key={busStop["latitude"] + "_" + busStop["longitude"]} position={[parseFloat(busStop["latitude"]), parseFloat(busStop["longitude"])]}>
-                            <Popup>
-                                {busStop["busstopKana"]}<br />
-                                {busStop["busstopName"]}<br />
-                                {busStop["busstopMemo"]}
-                            </Popup>
-                        </Marker>
-                    )
-                }
-            </>
-            <>
-                {
-                    polylineSeries.map(polyline =>
-                        <Polyline pathOptions={{"color": "blue"}} positions={polyline} />
-                    )
-                }
-            </>
-        </MapContainer>);
-}
-
+mermaid.initialize({
+    startOnLoad: false,
+});
 
 function App() {
     const [busStopCodeArray, setBusStopCodeArray] = useState([]);
@@ -76,6 +32,8 @@ function App() {
     const [text, setText] = useState("");
     const [queryValue, setQueryValue] = useState("");
     const [posSeries, setPosSeries] = useState([]);
+    const [graphMermaid, setGraphMermaid] = useState(<></>);
+    const ref = useRef(null);
 
     console.log("App()");
 
@@ -124,19 +82,50 @@ function App() {
             .catch(error => console.error('Error fetching data:', error));
     }
 
-
     // 以下の関数は、停留所コードから「停留所名（停留所かな）:停留所コード」の形式の文字列に変換する関数
     const busstopCode2str = (busstopCode) => {
-        console.log("busstopCode", busstopCode)
-        // グラフ描画には乗り降りの場所の情報を含めない停留所コードを使用する。
+        // グラフ描画でのラベルには乗り降りの場所の情報を含めない停留所コードを使用する。
         const id = busstopCode;
-        console.log("id", id);
-        console.log("B", busStopShortCodeDict[busstopCode])
-        return 'obj' + id + '(["`' + busStopShortCodeDict[busstopCode]["busstopKana"] + "<br>"+ busStopShortCodeDict[busstopCode]["busstopName"] + '`"])';
+        return 'obj' + id + '(["`' + busStopShortCodeDict[busstopCode]["busstopKana"] + "<br>" + busStopShortCodeDict[busstopCode]["busstopName"] + '`"])';
     };
-    
+
+    const pathToMermaid = (busstopKanaFrom, busstopKanaTo, path) => {
+        const isDebug = false;
+        let output = "";
+
+        console.log("CHECK");
+
+        // output +=("### " + busstopCode2str(Array.from((busstopCodeSetFrom)[0]) + " → " + busstopCode2str(Array.from(busstopCodeSetTo)[0])));
+        // output += ("### " + busstopKanaFrom + " → " + busstopKanaTo);
+        //  output += ("\n")
+        //  output += ("```mermaid");
+        //  output += ("\n")
+        // 注:
+        // TB (または TD )で上から下へのグラフ
+        // LR で左から右へのグラフになります
+        output += ("graph TB;");
+        output += ("\n")
+        path.forEach(([busstopCode1, busstopCode2, rel]) => {
+            // console.log("rel", rel);
+            const systemKey = rel["systemKey"];
+
+            // console.log("systemKey", systemKey);
+            const system = busSystemDict[systemKey];
+            const via = system["via"] === "" ? "" : "-" + system["via"] + "経由-";
+            const systemDisp = system["systemSymbol"] + ":" + system["start"] + "-" + system["end"]
+                + via
+                + (isDebug ? ("-" + system["directionCode"]) : (""));
+
+            output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
+            output += ("\n")
+        });
+
+        return output;
+    }
+
     const updateQueryValue = (text) => {
         const workPosSeries = [];
+        let mermaidData = 'graph TB;';
         if (text.includes(" ")) {
             const splited = text.split(" ");
             // 出発
@@ -150,27 +139,30 @@ function App() {
                     "next", [], // categoriesは使わない
                     false, // 対称的な関係ではない
                     busstopCodeSetFrom, busstopCodeSetTo)
-                
+
                 const subSeries = [];
                 const path = r["route"];
-                for (let index = 0; index < path.length; index ++) {
+                for (let index = 0; index < path.length; index++) {
                     const [_, __, rel] = path[index];
                     subSeries.push([busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]]);
-                    console.log("pos", subSeries[workPosSeries.length - 1]);
+                    // console.log("pos", subSeries[workPosSeries.length - 1]);
                     subSeries.push([busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]]);
-                    console.log("pos", subSeries[workPosSeries.length - 1]);
+                    // console.log("pos", subSeries[workPosSeries.length - 1]);
                 }
                 workPosSeries.push(subSeries);
                 console.log("updated 1", "path.length = ", path.length, "workPosSeries.length = ", workPosSeries.length);
+
+                mermaidData = pathToMermaid(busstopKanaFrom, busstopKanaTo, path);
             }
         }
         else {
             if (text.match(/^[,\d]+$/) != null) {
-                console.log("経路", text);
+                // console.log("経路", text);
                 const routeId = text;
                 const routeData = busstopRelList.filter(rel => {
-                    return rel["systemKey"].startsWith(routeId)});
-                console.log("routeData.length", routeData.length);
+                    return rel["systemKey"].startsWith(routeId)
+                });
+                // console.log("routeData.length", routeData.length);
                 const work = routeData.map(rel => {
                     const code1 = rel["busstopCode1Detail"];
                     const code2 = rel["busstopCode2Detail"];
@@ -179,18 +171,27 @@ function App() {
                     return [[latlng1["latitude"], latlng1["longitude"]], [latlng2["latitude"], latlng2["longitude"]]]
                 });
                 // workPosSeries.push([])
-                work.forEach(x => {workPosSeries.push(x)});
+                work.forEach(x => { workPosSeries.push(x) });
             }
         }
-
         console.log("updated 0");
         setQueryValue(text);
         setPosSeries(workPosSeries);
+
+        console.log("render start (0)");
+        mermaid.render('graphDiv', mermaidData)
+        .then(node => {
+            console.log("render start");
+            setGraphMermaid(node);
+            console.log("render end. object is:");
+            console.log(node);
+        })
+        .catch(error => console.error('Error update mermaid chart:', error));
     }
 
     const splitedText = text.split(" ");
 
-    const filterFunc = 
+    const filterFunc =
         (busstop, x) => {
             if (x.length === 0) {
                 return false;
@@ -210,10 +211,22 @@ function App() {
     }
 
     return (<>
-        <input value={text} onChange={(event) => { setText(event.target.value) }} />
+        <input value={text} style={{"width": "200px"}} onChange={(event) => { setText(event.target.value) }} />
         <button onClick={() => { updateQueryValue(text) }}>ボタン</button>
         <br />
         {mapDisplay(busstopList, posSeries)}
+        { /* className="mermaid" */ }
+        { /*
+        <div className="mermaid"
+            ref={ref}
+            dangerouslySetInnerHTML={{ __html: graphMermaid}}
+        >
+        </div>
+        */ }
+        <div
+            ref={ref}
+            dangerouslySetInnerHTML={{ __html: graphMermaid['svg']}}
+        />
     </>);
 }
 
