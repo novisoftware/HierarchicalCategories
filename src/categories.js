@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-/*
- * Expand category name to name set.
- * (trace down)
+/**
+ * 与えられたカテゴリ名を下位カテゴリを含めたカテゴリ名のSetに展開します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSet
  */
 function expandCategories(categories, categoryName) {
     let foundNames = new Set();
@@ -61,9 +65,13 @@ function expandCategories(categories, categoryName) {
     return foundNames;
 }
 
-/*
- * Expand category name to name set.
- * (trace up)
+/**
+ * 与えられたカテゴリ名の上位カテゴリを列挙し、カテゴリ名のSetに展開します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSetで上位カテゴリをカテゴリを返却します。指定されたカテゴリを含みます。
  */
 function traceUpCategory(categories, categoryName) {
     let foundNames = new Set();
@@ -109,8 +117,13 @@ function traceUpCategory(categories, categoryName) {
     return foundNames;
 }
 
-/*
- * 上位カテゴリを洗い出す
+/**
+ * 与えられたカテゴリ名の上位カテゴリを取得します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSetで上位カテゴリを返却します。。指定されたカテゴリを含みません。
  */
 function superordinateCategory(categories, categoryName) {
     const work = traceUpCategory(categories, categoryName);
@@ -118,8 +131,12 @@ function superordinateCategory(categories, categoryName) {
     return work;
 }
 
-/*
- * 辞書の形式に変換するユーティリティ
+/**
+ * 与えられたカテゴリを辞書の形式に変換します。
+ * 
+ * @type Object
+ * @param {Object} categories 
+ * @returns parentDict は名前→親の形式の辞書を返却し、 childDict は名前→子の形式の辞書を返却します。
  */
 function makeDict(categories) {
     // 辞書(キー: 自ノード、 値: 子ノードの集合)
@@ -162,9 +179,12 @@ function makeDict(categories) {
     return {"parentDict": parentDict, "childDict": childDict};
 }
 
-/*
- * トポロジカルソートを行うユーティリティ。
- * 閉路の有無を点検するために使用する。
+/**
+ * カテゴリとして与えられたグラフに対してトポロジカルソートを行います。
+ * カテゴリの定義が循環(閉路)を含むかを点検するために使用します。
+ * 
+ * @param {*} categories 
+ * @returns 
  */
 function topologicalSort(categories) {
     const dict = makeDict(categories);
@@ -199,81 +219,5 @@ function topologicalSort(categories) {
     return {"sortedList": sorted, "leftSet": left};
 }
 
-/*
- * 関係を辿る
- *
- * (リレーションのデータ)
- * rels: 関係のリスト
- * colEnt1: entity1のカラム名
- * colEnt2: entity2のカラム名
- * colRel: 関係のカラム名
- * 
- * (リレーションの検索方法)
- * specifiedRel: 辿るためのリレーション名
- * categories: 関係のカテゴリ体系のリスト
- * isTransitive: リレーションの推移性の有無 (true, false)
- * isSymmetric: リレーションの対称性の有無 (true, false)
- * isReflexive: リレーションの反射性の有無 (true, false)
- * 
- * (開始, ゴールのエンティティ)
- * start: 開始name
- * goal: 終了name (nullを指定すると、ゴールは決めずにすべて列挙する)
- */
-function searchRel(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isTransitive, isSymmetric, isReflexive, start, goal) {
-    // specifiedRel に implies される relation の集合を取得する
-    const specifiedRelSet = expandCategories(categories, specifiedRel);
 
-    // 推論に使う関係だけを取り出す
-    const workRelList = [];
-    rels.forEach((currentRel) => {
-        if (specifiedRelSet.has(currentRel[colRel])) {
-            workRelList.push([currentRel[colEnt1], currentRel[colEnt2]]);
-            if (isSymmetric) {
-                workRelList.push([currentRel[colEnt2], currentRel[colEnt1]]);
-            }
-        }
-    });
-
-    let isReached = false;
-
-    const traceOutput = [];
-    const foundNameSet = new Set();
-    foundNameSet.add(start);
-    traceOutput.push(start);
-    while (true) {
-        let isChanged = false;
-
-        for (let index = 0; index < workRelList.length; index++) {
-            const r = workRelList[index];
-            if (foundNameSet.has(r[0])) {
-                if (!foundNameSet.has(r[1])) {
-                    isChanged = true;
-                    foundNameSet.add(r[1]);
-                    traceOutput.push(r[1]);
-                    if (goal !== null && r[1] === goal) {
-                        isReached = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (isReached) {
-            break;
-        }
-        if (! isTransitive) {
-            // 関係が推移性を持たないときは繰り返さない
-            break;
-        }
-        if (! isChanged) {
-            // 変化がないときは終了
-            break;
-        }
-    }
-
-    // 反射性を持たないときは、start を除外する
-    const ret = isReflexive ? traceOutput : traceOutput.filter((objName) => (objName !== start)); 
-
-    return {"answer": isReached, "foundNameSet": ret};
-}
-
-export {expandCategories, traceUpCategory, superordinateCategory, makeDict, topologicalSort, searchRel};
+export {expandCategories, traceUpCategory, superordinateCategory, makeDict, topologicalSort};
