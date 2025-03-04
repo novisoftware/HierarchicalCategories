@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-/*
- * Expand category name to name set.
- * (trace down)
+/**
+ * 与えられたカテゴリ名を下位カテゴリを含めたカテゴリ名のSetに展開します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSet
  */
 function expandCategories(categories, categoryName) {
     let foundNames = new Set();
@@ -61,110 +65,47 @@ function expandCategories(categories, categoryName) {
     return foundNames;
 }
 
+/**
+ * 与えられたカテゴリ名の上位カテゴリを列挙し、カテゴリ名のSetに展開します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSetで上位カテゴリをカテゴリを返却します。指定されたカテゴリを含みます。
+ */
+function traceUpCategory(categories, categoryName) {
+    let foundNames = new Set();
+    if (categories.filter(obj => obj["name"] === categoryName) === 0) {
+        return foundNames;
+    }
+    foundNames.add(categoryName);
 
-function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isSymmetric, startSet, goalSet) {
-    // specifiedRel に implies される relation の集合を取得する
-    const specifiedRelSet = expandCategories(categories, specifiedRel);
-
-    // 推論に使う関係だけを取り出す
-    const workRelList = [];
-    rels.forEach((currentRel) => {
-        if (specifiedRelSet.has(currentRel[colRel])) {
-            workRelList.push([currentRel[colEnt1], currentRel[colEnt2], currentRel]);
-            if (isSymmetric) {
-                workRelList.push([currentRel[colEnt2], currentRel[colEnt1], currentRel]);
-            }
-        }
-    });
-
-    let isReached = false;
-    let reachNum = 0;
-
-    const routeDict = {};
-    const foundNameDict = {}
-    Array.from(startSet).forEach(e => {foundNameDict[e] = 0})
-
-    // ルートの重み(固定値)
-    const FIX_DISTANCE = 1;
-
-    console.log("search start");
-
-    const foundGoal = new Set();
+    // 幅優先探索で上位カテゴリを洗い出す
     while (true) {
         let isChanged = false;
+        const addNames = new Set();
 
-        for (let index = 0; index < workRelList.length; index++) {
-            const r = workRelList[index];
-            const fromBusStop = r[0];
-            const toBusStop = r[1];
-            const rel = r[2];
-            if (fromBusStop in foundNameDict) {
-                if (!(toBusStop in foundNameDict)) {
-                    isChanged = true;
-                    // スタートからtoBusStopまでの距離
-                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
-                    foundNameDict[toBusStop] = distance;
-
-                    // 逆引き辞書を作成
-                    if (!(toBusStop in routeDict)) {
-                        routeDict[toBusStop] = {}
+        categories.forEach(obj => {
+            const currentName = obj["name"];
+            if ("parents" in obj) {
+                foundNames.forEach(foundName => {
+                    if (currentName === foundName) {
+                        const beforeN = foundNames.size;
+                        foundNames = new Set([...foundNames, ...obj["parents"]]);
+                        const afterN = foundNames.size;
+                        if (beforeN !== afterN) {
+                            isChanged = true;
+                        }
                     }
-                    routeDict[toBusStop][fromBusStop] = [distance, rel];
-                } else {
-                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
-                    if (foundNameDict[toBusStop] > distance) {
-                        isChanged = true;
-                        foundNameDict[toBusStop] = distance;
-                        routeDict[toBusStop] = {}
-                        routeDict[toBusStop][fromBusStop] = [distance, rel];
-                    };
-                }
-                if (isChanged && goalSet !== null && goalSet.has(toBusStop)) {
-                    foundGoal.add(toBusStop);
-                    isReached = true;
-                    reachNum += 1;
-                }
+                });
             }
-        }
-        if (reachNum > 0) {
-            break;
-        }
-        if (! isChanged) {
-            // 変化がないときは終了
-            break;
-        }
 
-        console.log("foundNameDict.size", foundNameDict.size);
-    }
-
-    console.log("search end");
-
-    // 得られた経路はゴールに到着しないものを含むツリー状になっている。
-    // ゴールから逆順に辿る。
-    // foundGoalを起点としてrouteDictを遡る
-    const traceOutput2 = [];
-    const foundNameSet2 = new Set(foundGoal);
-    const foundRouteSet = new Set();
-
-    while(true) {
-        let isChanged = false;
-        foundNameSet2.forEach((toBusStop) => {
-            if (toBusStop in routeDict) {
-                for (let fromBusStop in routeDict[toBusStop]) {
-                    const [distance, rel] = routeDict[toBusStop][fromBusStop];
-                    // 注: JavaScriptのタプルはキーとして使えない
-                    const keyStr = fromBusStop + "\n" + toBusStop;
-
-                    if (!foundRouteSet.has(keyStr)) {
+            if ("children" in obj) {
+                if (! currentName in foundNames) {
+                    if (obj["children"].intersect(foundNames).size > 0) {
                         isChanged = true;
-                        foundRouteSet.add(keyStr);
-                        traceOutput2.push([fromBusStop, toBusStop, rel]);
+                        foundNames.add(currentName);
                     }
-                    console.log("trace2 fromBusStop", fromBusStop);
-                    // foundRouteSetの要素数をconsole.logで確認
-                    console.log("foundRouteSet.size", foundRouteSet.size);                   
-
-                    foundNameSet2.add(fromBusStop);
                 }
             }
         });
@@ -172,15 +113,111 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
             break;
         }
     }
-    console.log("isReached", isReached);
 
+    return foundNames;
+}
 
-    const route = traceOutput2.reverse()
+/**
+ * 与えられたカテゴリ名の上位カテゴリを取得します。
+ * 
+ * @type Set
+ * @param {Object} categories 
+ * @param {String} categoryName 
+ * @returns カテゴリ名のSetで上位カテゴリを返却します。。指定されたカテゴリを含みません。
+ */
+function superordinateCategory(categories, categoryName) {
+    const work = traceUpCategory(categories, categoryName);
+    work.delete(categoryName);
+    return work;
+}
 
-    return {"answer": isReached, "route": route};
+/**
+ * 与えられたカテゴリを辞書の形式に変換します。
+ * 
+ * @type Object
+ * @param {Object} categories 
+ * @returns parentDict は名前→親の形式の辞書を返却し、 childDict は名前→子の形式の辞書を返却します。
+ */
+function makeDict(categories) {
+    // 辞書(キー: 自ノード、 値: 子ノードの集合)
+    const childDict = {};
+    // 辞書(キー: 自ノード、 値: 親ノードの集合)
+    const parentDict = {};
+    categories.forEach(category => {
+        const selfName = category['name'];
+        if (!(selfName in childDict)) {
+            childDict[selfName] = new Set();
+        }
+        if (!(selfName in parentDict)) {
+            parentDict[selfName] = new Set();
+        }
+        if ('parents' in category) {
+            parentDict[selfName] = parentDict[selfName].union(new Set(category['parents']));           
+
+            category['parents'].forEach(parent => {
+                if (parent in childDict) {
+                    childDict[parent].add(selfName);
+                } else {
+                    childDict[parent] = new Set(selfName);
+                }
+            });
+        }
+
+        if ('children' in category) {
+            childDict[selfName] = childDict[selfName].union(new Set(category['children']));
+
+            category['children'].forEach(child => {
+                if (child in parentDict) {
+                    parentDict[child].add(selfName);
+                } else {
+                    parentDict[child] = new Set(selfName);
+                }
+            });            
+        }
+    });
+
+    return {"parentDict": parentDict, "childDict": childDict};
+}
+
+/**
+ * カテゴリとして与えられたグラフに対してトポロジカルソートを行います。
+ * カテゴリの定義が循環(閉路)を含むかを点検するために使用します。
+ * 
+ * @param {*} categories 
+ * @returns 
+ */
+function topologicalSort(categories) {
+    const dict = makeDict(categories);
+    const parentDict = dict["parentDict"];
+    const sorted = [];
+    const foundSet = new Set();
+
+    while (true) {
+        let isChanged = false;
+        for (let [cateName, parentNameSet] of Object.entries(parentDict)) {
+            if (foundSet.has(cateName)) {
+                continue;
+            }
+            if (!parentNameSet.isSubsetOf(foundSet)) {
+                continue;
+            }
+            foundSet.add(cateName);
+            sorted.push(cateName);
+            isChanged = true;
+        };
+        if (! isChanged) {
+            break;
+        }
+    }
+
+    const parentdictKeys = Object.keys(parentDict);
+
+    // console.log("Set(parentDict.keys)", parentdictKeys);
+
+    const left = new Set(parentdictKeys).difference(new Set(sorted));
+
+    return {"sortedList": sorted, "leftSet": left};
 }
 
 
-
-
-export {searchRel2};
+export {expandCategories, traceUpCategory, superordinateCategory, makeDict, topologicalSort};

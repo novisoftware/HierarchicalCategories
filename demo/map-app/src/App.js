@@ -8,7 +8,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 // import MapDisplay from './Map.js'
 // import {expandCategories, superordinateCategory} from './categories.js';
 import { read_busstop_latitude_longitude, read_bus_system, read_busstop_order, read_busstop_url } from './util/bus.js';
-import { searchRel2 } from './util/categories.js';
+import { searchRel2 } from './util/relations.js';
 import { mapDisplay } from './util/map.js';
 import mermaid from 'mermaid';
 
