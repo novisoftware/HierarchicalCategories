@@ -130,17 +130,27 @@ function App() {
                     busstopCodeSetFrom, busstopCodeSetTo)
 
                 // 地図プロット用のデータを作る
-                const subSeries = [];
+                let subSeries = [];
                 const path = r["route"];
+                let lastBusStop = null;
                 for (let index = 0; index < path.length; index++) {
                     const [_, __, rel] = path[index];
-                    subSeries.push([busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]]);
-                    // console.log("pos", subSeries[workPosSeries.length - 1]);
-                    subSeries.push([busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]]);
+                    const pos1 = [busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]];
+                    const pos2 = [busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]];
 
+                    if (index > 0 && lastBusStop !== rel["busstopCode2Detail"]) {
+                        const lastPos = subSeries[subSeries.length - 1];
+                        workPosSeries.push(["bus", subSeries]);
+                        workPosSeries.push(["walk", [lastPos, pos1]]);
+                        subSeries = [];
+                    }
+                    subSeries.push(pos1);
+                    subSeries.push(pos2);
+
+                    lastBusStop = rel["busstopCode2Detail"];
                     // console.log("pos", subSeries[workPosSeries.length - 1]);
                 }
-                workPosSeries.push(subSeries);
+                workPosSeries.push(["bus", subSeries]);
                 console.log("updated 1", "path.length = ", path.length, "workPosSeries.length = ", workPosSeries.length);
 
                 // 有向グラフ表示用のデータを作る
@@ -163,7 +173,7 @@ function App() {
                     const code2 = rel["busstopCode2Detail"];
                     const latlng1 = busStopCodeDict[code1];
                     const latlng2 = busStopCodeDict[code2];
-                    return [[latlng1["latitude"], latlng1["longitude"]], [latlng2["latitude"], latlng2["longitude"]]]
+                    return ["bus", [[latlng1["latitude"], latlng1["longitude"]], [latlng2["latitude"], latlng2["longitude"]]]]
                 });
                 // workPosSeries.push([])
                 work.forEach(x => { workPosSeries.push(x) });
@@ -222,13 +232,38 @@ function App() {
     return (<>
         <h3>名古屋市の市バスを調べる</h3>
         アルゴリズムの紹介の意味で名古屋市の市バスの経路探索を実演します。<br/>
+        情報の正確性、最新性について一切の責を負いません。<br/>
         名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="./public/data/bus/LICENSE.txt" target="_blank">詳細</a>)<br/>
+        テキスト入力欄に出発停留所名と到着停留所名をスペースで区切って入力してください。<br/>
+        例）「いけした やだ」<br/>
+
+        {/* 以下は、深夜を含めるチェックボックス */}
+        <input type="checkbox" id="deepNight" name="deepNight" value="deepNight" />
+        <label htmlFor="deepNight">深夜バスを含める</label>
+        <br />
+
+        {/* 以下は、バス停留所名を入力するテキストボックス */}
         <input value={text} style={{"width": "200px"}} onChange={(event) => { setText(event.target.value) }} />
         <button onClick={() => { updateQueryValue(text) }}>ボタン</button>
         <br />
         {mapDisplay(busstopList, posSeries)}
         <Mermaid src={mermaidData}/>
-    </>);
+        <div>
+            <h3>バス系統</h3>
+            <p>系統名をクリックすると、経路が表示されます。</p>
+            <p>系統名は、系統記号、起点、終点、経由地、方向を示しています。</p>
+        </div>
+        <>
+        {
+            busSystemArray.map( s => {
+                return <a onClick={() => {
+                    const code = s["systemCode"] + "," + s["routeCode"] + "," + s["directionCode"];
+                    updateQueryValue(code);
+                    // updateQueryValue("いけした");
+                }}>{s["systemSymbol"]} {s["start"]} {s["end"]} {s["via"]} {s["directionCode"]}</a>;
+            })
+        }
+        </>    </>);
 }
 
 export default App;
