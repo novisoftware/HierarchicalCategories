@@ -175,14 +175,19 @@ function read_busstop_order(rawCsv, busStopDict, busSystemDict) {
 
         // console.log("busstop_code", busstop_code);
 
-        busstop_order_list.push({
-            "systemCode": system_code,
-            "routeCode": route_code,
-            "directionCode": direction_code,
-            "order": order,
-            "busstopCode": busstop_code,
-            "busstopCodeShort": busStopDict[busstop_code]["busstopCodeShort"],
-        });
+        if (!(busstop_code in busStopDict)) {
+            // 整合性に問題あり
+            console.log(`busStopDict does not have ${busstop_code}`);
+        } else {
+            busstop_order_list.push({
+                "systemCode": system_code,
+                "routeCode": route_code,
+                "directionCode": direction_code,
+                "order": order,
+                "busstopCode": busstop_code,
+                "busstopCodeShort": busStopDict[busstop_code]["busstopCodeShort"],
+            });
+        }
       }
     );
 

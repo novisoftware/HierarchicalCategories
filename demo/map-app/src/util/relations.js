@@ -92,13 +92,27 @@ function searchRel(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isT
     return {"answer": isReached, "foundNameSet": ret};
 }
 
-function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isSymmetric, startSet, goalSet) {
+function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, isSymmetric, startSet, goalSet, busStopShortCodeDict) {
+    const codeToName = (code) => {
+        const busStop = busStopShortCodeDict[code];
+        if (!busStop) {
+            return "???";
+        }
+        return busStop["busstopName"];
+    };
+
     // specifiedRel に implies される relation の集合を取得する
     const specifiedRelSet = expandCategories(categories, specifiedRel);
 
     // 推論に使う関係だけを取り出す
     const workRelList = [];
     rels.forEach((currentRel) => {
+        if (currentRel["systemCode"] == "6201"
+            || currentRel["systemCode"] == "6202"
+        ) {
+            // 深夜は無視する
+            return;
+        }
         if (specifiedRelSet.has(currentRel[colRel])) {
             workRelList.push([currentRel[colEnt1], currentRel[colEnt2], currentRel]);
             if (isSymmetric) {
@@ -112,12 +126,14 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
 
     const routeDict = {};
     const foundNameDict = {}
+    const ignoreNameDict = {}
     Array.from(startSet).forEach(e => {foundNameDict[e] = 0})
 
     // ルートの重み(固定値)
     const FIX_DISTANCE = 1;
 
     console.log("search start");
+    let goalDistance = null;
 
     const foundGoal = new Set();
     while (true) {
@@ -129,36 +145,66 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
             const toBusStop = r[1];
             const rel = r[2];
             if (fromBusStop in foundNameDict) {
-                if (!(toBusStop in foundNameDict)) {
-                    isChanged = true;
-                    // スタートからtoBusStopまでの距離
-                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
-                    foundNameDict[toBusStop] = distance;
-
-                    // 逆引き辞書を作成
-                    if (!(toBusStop in routeDict)) {
-                        routeDict[toBusStop] = {}
-                    }
-                    routeDict[toBusStop][fromBusStop] = [distance, rel];
-                } else {
-                    const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
-                    if (foundNameDict[toBusStop] > distance) {
+                // スタートからtoBusStopまでの距離
+                const distance = foundNameDict[fromBusStop] + FIX_DISTANCE
+                if (goalDistance == null || distance <= goalDistance) {
+                    if (!(toBusStop in foundNameDict)) {
+                        // toBusStopに到着するまでの経路が初めて見つかった場合
+    
+                        console.log(`${fromBusStop} to ${toBusStop} (${codeToName(fromBusStop)} to ${codeToName(toBusStop)}) : distance = ${distance}  new add`)
                         isChanged = true;
                         foundNameDict[toBusStop] = distance;
-                        routeDict[toBusStop] = {}
-                        routeDict[toBusStop][fromBusStop] = [distance, rel];
-                    };
-                }
-                if (isChanged && goalSet !== null && goalSet.has(toBusStop)) {
-                    foundGoal.add(toBusStop);
-                    isReached = true;
-                    reachNum += 1;
+    
+                        // 逆引き辞書を作成
+                        if (!(toBusStop in routeDict)) {
+                            routeDict[toBusStop] = {};
+                        }
+                        routeDict[toBusStop][fromBusStop] = [distance, new Set([rel])];
+                    } else {
+                        if (foundNameDict[toBusStop] > distance) {
+                            // toBusStopに到着するまでの、より距離の短い経路が見つかった場合
+    
+                            console.log(`${fromBusStop} to ${toBusStop} (${codeToName(fromBusStop)} to ${codeToName(toBusStop)}) : distance = ${distance}  replace ${foundNameDict[toBusStop]}`)
+                            isChanged = true;
+                            // その場所に辿り着くために必要な距離を更新する
+                            foundNameDict[toBusStop] = distance;
+                            // 逆引き辞書に登録された他の経路を消す(遠いので)
+                            routeDict[toBusStop] = {};
+                            routeDict[toBusStop][fromBusStop] = [distance, new Set([rel])];
+                        }
+                        else if (foundNameDict[toBusStop] == distance) {
+                            // toBusStopに到着するまでの、最短と同じ距離の経路が見つかった場合
+    
+                            console.log(`${fromBusStop} to ${toBusStop} (${codeToName(fromBusStop)} to ${codeToName(toBusStop)}) : distance = ${distance}  same distance to ${foundNameDict[toBusStop]}`)
+                            let addSet = new Set([rel]);
+                            if (fromBusStop in routeDict[toBusStop]) {
+                                let [_, old_rels] = routeDict[toBusStop][fromBusStop];
+                                // let old_rels = wk[1];
+                                addSet = addSet.union(old_rels);
+                                
+                                if (addSet.size != old_rels.size) {
+                                    isChanged = true;
+                                }
+                            }
+                            routeDict[toBusStop][fromBusStop] = [distance, addSet];
+                        };
+                    }
+                    if (isChanged && goalSet !== null && goalSet.has(toBusStop)) {
+                        if (goalDistance == null || distance < goalDistance) {
+                            goalDistance = distance;
+                        }
+                        foundGoal.add(toBusStop);
+                        isReached = true;
+                        reachNum += 1;
+                    }
                 }
             }
         }
+        /*
         if (reachNum > 0) {
             break;
         }
+        */
         if (! isChanged) {
             // 変化がないときは終了
             break;
@@ -181,18 +227,21 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
         foundNameSet2.forEach((toBusStop) => {
             if (toBusStop in routeDict) {
                 for (let fromBusStop in routeDict[toBusStop]) {
-                    const [distance, rel] = routeDict[toBusStop][fromBusStop];
+                    const [distance, rels] = routeDict[toBusStop][fromBusStop];
+
                     // 注: JavaScriptのタプルはキーとして使えない
                     const keyStr = fromBusStop + "\n" + toBusStop;
 
                     if (!foundRouteSet.has(keyStr)) {
                         isChanged = true;
                         foundRouteSet.add(keyStr);
-                        traceOutput2.push([fromBusStop, toBusStop, rel]);
+                        traceOutput2.push([fromBusStop, toBusStop, rels]);
+
+                        console.log(`遡ってチェック ${fromBusStop} から ${toBusStop} (${codeToName(fromBusStop)} から ${codeToName(toBusStop)}) : 距離 ${distance} `);
                     }
-                    console.log("trace2 fromBusStop", fromBusStop);
+                    // console.log("trace2 fromBusStop", fromBusStop);
                     // foundRouteSetの要素数をconsole.logで確認
-                    console.log("foundRouteSet.size", foundRouteSet.size);                   
+                    // console.log("foundRouteSet.size", foundRouteSet.size);                   
 
                     foundNameSet2.add(fromBusStop);
                 }

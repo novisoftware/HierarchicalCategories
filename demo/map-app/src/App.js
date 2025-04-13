@@ -92,19 +92,23 @@ function App() {
         // LR で左から右へのグラフになります
         output += ("graph TB;");
         output += ("\n")
-        path.forEach(([busstopCode1, busstopCode2, rel]) => {
-            // console.log("rel", rel);
-            const systemKey = rel["systemKey"];
+        path.forEach(([busstopCode1, busstopCode2, rels]) => {
+            rels.forEach((rel) => {
+                // console.log("rel", rel);
+                const systemKey = rel["systemKey"];
 
-            // console.log("systemKey", systemKey);
-            const system = busSystemDict[systemKey];
-            const via = system["via"] === "" ? "" : "-" + system["via"];
-            const systemDisp = system["systemSymbol"] + ":" + system["start"] + "-" + system["end"]
-                + via
-                + (isDebug ? ("-" + system["directionCode"]) : (""));
+                console.log("systemKey = " + systemKey);
 
-            output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
-            output += ("\n")
+                // console.log("systemKey", systemKey);
+                const system = busSystemDict[systemKey];
+                const via = system["via"] === "" ? "" : "-" + system["via"];
+                const systemDisp = system["systemSymbol"] + ":" + system["start"] + "-" + system["end"]
+                    + via
+                    + (isDebug ? ("-" + system["directionCode"]) : (""));
+
+                output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
+                output += ("\n")
+            })
         });
 
         return output;
@@ -127,27 +131,35 @@ function App() {
                 const r = searchRel2(busstopRelList, "busstopCode1", "busstopCode2", "relation",
                     "next", [], // categoriesは使わない
                     false, // 対称的な関係ではない
-                    busstopCodeSetFrom, busstopCodeSetTo)
+                    busstopCodeSetFrom, busstopCodeSetTo,
+                    busStopShortCodeDict // デバッグ用バス停コードリスト
+                )
 
                 // 地図プロット用のデータを作る
                 let subSeries = [];
                 const path = r["route"];
                 let lastBusStop = null;
                 for (let index = 0; index < path.length; index++) {
-                    const [_, __, rel] = path[index];
-                    const pos1 = [busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]];
-                    const pos2 = [busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]];
+                    const [_, __, rels] = path[index];
+                    const relArray = Array.from(rels);
 
-                    if (index > 0 && lastBusStop !== rel["busstopCode2Detail"]) {
-                        const lastPos = subSeries[subSeries.length - 1];
-                        workPosSeries.push(["bus", subSeries]);
-                        workPosSeries.push(["walk", [lastPos, pos1]]);
-                        subSeries = [];
-                    }
-                    subSeries.push(pos1);
-                    subSeries.push(pos2);
+                    rels.forEach((rel) => {
+                        const pos1 = [busStopCodeDict[rel["busstopCode1Detail"]]["latitude"], busStopCodeDict[rel["busstopCode1Detail"]]["longitude"]];
+                        const pos2 = [busStopCodeDict[rel["busstopCode2Detail"]]["latitude"], busStopCodeDict[rel["busstopCode2Detail"]]["longitude"]];
+    
+                        if (index > 0) {
+                            workPosSeries.push(["bus", [pos2, pos1]]);
+                            if (! lastBusStop.has(rel["busstopCode2Detail"])) {
+                                workPosSeries.push(["walk", [pos2, pos1]]);
+                            }
+                        }
+                   });
 
-                    lastBusStop = rel["busstopCode2Detail"];
+                   lastBusStop = new Set();
+                   rels.forEach((rel) => {
+                    lastBusStop = lastBusStop.union(new Set(rel["busstopCode2Detail"]));
+                   });
+                   
                     // console.log("pos", subSeries[workPosSeries.length - 1]);
                 }
                 workPosSeries.push(["bus", subSeries]);
@@ -182,7 +194,7 @@ function App() {
                 const path = routeData.map(rel => {
                     const code1 = rel["busstopCode1"];
                     const code2 = rel["busstopCode2"];
-                    return [code1, code2, rel]
+                    return [code1, code2, new Set([rel])]
                 });
                 mermaidData = pathToMermaid(path);
             }
