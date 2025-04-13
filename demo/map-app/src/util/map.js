@@ -38,8 +38,12 @@ function mapDisplay(busstopList, polylineSeries) {
             </>
             <>
                 {
-                    polylineSeries.map(polyline =>
-                        <Polyline pathOptions={{"color": "blue"}} positions={polyline} />
+                    polylineSeries.map(polylineData => {
+                        const [kind, polyline] = polylineData;
+                        const color = kind === "bus" ? "blue" : "gray";
+
+                        return <Polyline pathOptions={{"color": color}} positions={polyline} />
+                    }
                     )
                 }
             </>
