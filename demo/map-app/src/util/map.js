@@ -26,7 +26,7 @@ function mapDisplay(busstopList, polylineSeries) {
             <>
                 {
                     busstopList.map(busStop =>
-                        <Marker key={busStop["latitude"] + "_" + busStop["longitude"]} position={[parseFloat(busStop["latitude"]), parseFloat(busStop["longitude"])]}>
+                        <Marker key={busStop["latitude"] + "_" + busStop["longitude"] + "_" + busStop["busstopName"] + "_" + busStop["busstopMemo"]} position={[parseFloat(busStop["latitude"]), parseFloat(busStop["longitude"])]}>
                             <Popup>
                                 {busStop["busstopKana"]}<br />
                                 {busStop["busstopName"]}<br />

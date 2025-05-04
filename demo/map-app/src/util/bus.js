@@ -105,6 +105,8 @@ function read_busstop_latitude_longitude(rawCsv) {
 function read_bus_system(rawCsv) {
     const busSystemArray = [];
     const busSystemDict = {};
+    const systemSymbolSet = new Set();
+    const systemSymbolList = [];
 
     rawCsv.split("\n").forEach((line, index) => {
         if (index === 0) {
@@ -145,9 +147,15 @@ function read_bus_system(rawCsv) {
             "end": end,
             "via": via,
         };
+        if (!systemSymbolSet.has(system_symbol)) {
+            systemSymbolSet.add(system_symbol);
+            systemSymbolList.push(system_symbol);
+        }
     });
 
-    return [busSystemArray, busSystemDict];
+    console.log("systemSymbolList length = " + systemSymbolList.length);
+
+    return [busSystemArray, busSystemDict, systemSymbolList];
 }
 
 
