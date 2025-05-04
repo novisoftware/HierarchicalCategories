@@ -107,8 +107,8 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
     // 推論に使う関係だけを取り出す
     const workRelList = [];
     rels.forEach((currentRel) => {
-        if (currentRel["systemCode"] == "6201"
-            || currentRel["systemCode"] == "6202"
+        if (currentRel["systemCode"] === "6201"
+            || currentRel["systemCode"] === "6202"
         ) {
             // 深夜は無視する
             return;
@@ -172,7 +172,7 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
                             routeDict[toBusStop] = {};
                             routeDict[toBusStop][fromBusStop] = [distance, new Set([rel])];
                         }
-                        else if (foundNameDict[toBusStop] == distance) {
+                        else if (foundNameDict[toBusStop] === distance) {
                             // toBusStopに到着するまでの、最短と同じ距離の経路が見つかった場合
     
                             console.log(`${fromBusStop} to ${toBusStop} (${codeToName(fromBusStop)} to ${codeToName(toBusStop)}) : distance = ${distance}  same distance to ${foundNameDict[toBusStop]}`)
@@ -182,7 +182,7 @@ function searchRel2(rels, colEnt1, colEnt2, colRel, specifiedRel, categories, is
                                 // let old_rels = wk[1];
                                 addSet = addSet.union(old_rels);
                                 
-                                if (addSet.size != old_rels.size) {
+                                if (addSet.size !== old_rels.size) {
                                     isChanged = true;
                                 }
                             }

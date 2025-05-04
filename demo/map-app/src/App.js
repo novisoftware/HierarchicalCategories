@@ -287,7 +287,7 @@ function App() {
         アルゴリズムの実演の意味で名古屋市の市バスについて調べます。情報の正確性、完全性、最新性について一切の責を負いません。<br />
         経路の表示はバス停留所を直線で結んでいます(走行する道路のデータはないため)<br />
         データ中に含まれる深夜バスは当面休止中とのことです(2025年現在)。<br />
-        名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/demo/map-app/README.md" target="_blank">詳細</a>)<br />
+        名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/blob/main/demo/map-app/README.md" target="_blank">詳細</a>)<br />
         テキスト入力欄に停留所名を入力すると、部分一致する停留所の情報を表示します。<br />
         テキスト入力欄に出発停留所名と到着停留所名をスペースで区切って入力すると経路を表示します（完全一致する停留所）。<br />
         例）「いけした やだ」<br />
