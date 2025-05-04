@@ -1,6 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+/demo/map-app/node_modules
+/demo/table-app/node_modules
 /node_modules
 /.pnp
 .pnp.js
