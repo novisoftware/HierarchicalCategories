@@ -335,15 +335,25 @@ node util_convert_to_md.js 点検対象のJSONファイル > 点検結果出力�
 ```
 
 ## categories.js で定義している関数
-
 カテゴリの定義を処理する関数を定義しています。
 
 ### expandCategories()
-#### 説明
-
 指定されたカテゴリに含まれるカテゴリを列挙します。返り値は文字列のSetです。
+| No. | 引数 | 説明 |
+| --- | ---- | ---- |
+| 1 | categories | カテゴリ体系を指定します |
+| 2 | categoryName | 起点とするカテゴリ名を指定します |
 
-#### 引数
+### traceUpCategory()
+指定されたカテゴリの上位のカテゴリを列挙します。返り値は文字列のSetです。
+
+| No. | 引数 | 説明 |
+| --- | ---- | ---- |
+| 1 | categories | カテゴリ体系を指定します |
+| 2 | categoryName | 起点とするカテゴリ名を指定します |
+
+### traceUpCategory()
+指定されたカテゴリの上位のカテゴリを列挙します。返り値は文字列のSetです。
 
 | No. | 引数 | 説明 |
 | --- | ---- | ---- |
@@ -351,7 +361,6 @@ node util_convert_to_md.js 点検対象のJSONファイル > 点検結果出力�
 | 2 | categoryName | 起点とするカテゴリ名を指定します |
 
 #### 実装について
-
 指定されたノードを起点としてグラフを幅優先探索で辿り、到達可能なノードの集合を返しています。
 <br> (幅優先探索については Wikipedia( https://ja.wikipedia.org/wiki/%E5%B9%85%E5%84%AA%E5%85%88%E6%8E%A2%E7%B4%A2 )などを参照してください)
 
@@ -451,3 +460,8 @@ npm start
 
 ビルドする際は ```npm build`` を実行します。
 
+<<<<<<< HEAD
+=======
+
+また、デモを https://novisoftware.github.io/demo/HierarchicalCategories/table-app/ に置いています。
+>>>>>>> devlop2

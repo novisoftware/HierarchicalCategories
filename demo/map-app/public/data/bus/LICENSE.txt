@@ -1,0 +1,28 @@
+本フォルダは名古屋市交通局による以下のデータセットを格納しています。
+
+Creative Commons Attribution 4.0 International
+
+This license requires that reusers give credit to the creator. It allows reusers to distribute, remix, adapt, and build upon the material in any medium or format, even for commercial purposes.
+
+    BY: 名古屋市交通局(Transportation Bureau, City of Nagoya)
+
+市バス停留所並順
+https://data.bodik.jp/dataset/231002_7109030000_busstop-order
+
+市バス停留所一覧
+https://data.bodik.jp/dataset/231002_7109030000_busstop-latitude-longitude
+
+市バス系統一覧
+https://data.bodik.jp/dataset/231002_7109030000_bus-startend
+
+市バス停留所URL
+https://data.bodik.jp/dataset/231002_7101020000_busstop-url
+
+
+(参考)
+
+名古屋市におけるオープンデータの取組みについて
+https://www.city.nagoya.jp/shisei/category/388-1-0-0-0-0-0-0-0-0.html
+
+名古屋市オープンデータ利用規約
+https://www.city.nagoya.jp/somu/page/0000056954.html
