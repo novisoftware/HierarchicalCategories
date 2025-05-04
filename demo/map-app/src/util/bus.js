@@ -95,6 +95,8 @@ function read_busstop_latitude_longitude(rawCsv) {
       }
     );
 
+    // console.log("busStopCodeDict length = " + Array.from(Object.keys(busStopCodeDict)).length);
+
     return [busStopCodeArray, busStopCodeDict, busStopShortCodeDict, busStopKanaDict, busStopKanaDictShort]
 } 
 
@@ -112,7 +114,7 @@ function read_bus_system(rawCsv) {
         if (index === 0) {
           return;
         }
-        if (line.length == 0) {
+        if (line.length === 0) {
             return;
         }
         const items = line.split(",");
@@ -153,7 +155,7 @@ function read_bus_system(rawCsv) {
         }
     });
 
-    console.log("systemSymbolList length = " + systemSymbolList.length);
+    // console.log("systemSymbolList length = " + systemSymbolList.length);
 
     return [busSystemArray, busSystemDict, systemSymbolList];
 }
@@ -166,11 +168,13 @@ function read_busstop_order(rawCsv, busStopDict, busSystemDict) {
     const busstop_order_list = [];
     const busstop_rel_list = [];
 
+    // console.log("keys of busStopDict = " + Object.keys(busStopDict));
+
     rawCsv.split("\n").forEach((line, index) => {
         if (index === 0) {
           return;
         }
-        if (line.length == 0) {
+        if (line.length === 0) {
             return;
         }
         const items = line.split(",");
@@ -185,8 +189,9 @@ function read_busstop_order(rawCsv, busStopDict, busSystemDict) {
 
         if (!(busstop_code in busStopDict)) {
             // 整合性に問題あり
-            console.log(`busStopDict does not have ${busstop_code}`);
+            console.log(`busStopDict does not have ${busstop_code}.`);
         } else {
+            // console.log(`busStopDict have ${busstop_code}`);
             busstop_order_list.push({
                 "systemCode": system_code,
                 "routeCode": route_code,
@@ -219,6 +224,9 @@ function read_busstop_order(rawCsv, busStopDict, busSystemDict) {
         }
     }
 
+    // console.log("busstop_order_list.len = " + busstop_order_list.length);
+    // console.log("busstop_rel_list.len = " + busstop_rel_list.length);
+
     return [busstop_order_list, busstop_rel_list];
 }
 
@@ -233,7 +241,7 @@ function read_busstop_url(rawCsv /* , busStopDict, busSystemDict */) {
         if (index === 0) {
           return;
         }
-        if (line.length == 0) {
+        if (line.length === 0) {
             return;
         }
         const items = line.split(",");

@@ -27,8 +27,9 @@ function App() {
     const [ini4, setIni4] = useState(false);
     // 地図上のバス停表示
     const [busstopList, setBusstopList] = useState([]);
-    const [busSystemFilter, setBusSystemFilter] = useState("");
+    const [busSystemFilter, setBusSystemFilter] = useState(null);
     const [busSystemFilterWork, setBusSystemFilterWork] = useState("");
+    const [filterMessage, setFilterMessage] = useState("絞り込みなし");
     // 検索テキスト
     const [text, setText] = useState("");
     // 検索用内部文字列
@@ -50,7 +51,19 @@ function App() {
                 setBusStopShortCodeDict(r3);
                 setBusStopKanaDict(r4);
                 setBusStopKanaDictShort(r5);
-                setIni1(true);
+
+                // busstop-latitude-longitude.csv の解析結果を使用し、busstop-order.csv を解析する。
+                // このため fetch を入れ子にしている。
+                const busStopCodeDictWork = r2;
+                fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-order.csv`)
+                    .then(response => response.text())
+                    .then(csv => {
+                        const [r6, r7] = read_busstop_order(csv, busStopCodeDictWork);
+                        setBusstopOrderList(r6);
+                        setBusstopRelList(r7);
+                        setIni1(true);
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
             })
             .catch(error => console.error('Error fetching data:', error));
         fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-url.csv`)
@@ -71,17 +84,7 @@ function App() {
                 setIni3(true);
             })
             .catch(error => console.error('Error fetching data:', error));
-        fetch(`${process.env.PUBLIC_URL}/data/bus/busstop-order.csv`)
-            .then(response => response.text())
-            .then(csv => {
-                const [r1, r2] = read_busstop_order(csv, busStopCodeDict);
-                setBusstopOrderList(r1);
-                setBusstopRelList(r2);
-                setIni4(true);
-            })
-            .catch(error => console.error('Error fetching data:', error));
-
-    }, [ini1, ini2, ini3, ini4]);
+    }, [ini1, ini2, ini3]);
 
     // 以下の関数は、停留所コードから「停留所名（停留所かな）:停留所コード」の形式の文字列に変換する関数
     const busstopCode2str = (busstopCode) => {
@@ -158,6 +161,8 @@ function App() {
     }
 
     const updateQueryValue = (text) => {
+        console.log("updateQueryValue text = " + text);
+        console.log("busstopRelList.length = " + busstopRelList.length);
         // 地図上にプロットするlat, lng の系列
         const workPosSeries = [];
         let mermaidData = emptyMermaidData;
@@ -200,7 +205,7 @@ function App() {
                     });
 
                     setBusstopList(Array.from(busStopCodeSet).map(code => (busStopCodeDict[code])));
-        
+
                     lastBusStop = new Set();
                     rels.forEach((rel) => {
                         lastBusStop = lastBusStop.union(new Set(rel["busstopCode2Detail"]));
@@ -281,91 +286,130 @@ function App() {
         setMermaidData(data);
     }
 
-    return (<>
-        <div style={{padding: "0 10px 0 10px"}}>
-        <h3>名古屋市の市バスを調べてみよう</h3>
-        アルゴリズムの実演の意味で名古屋市の市バスについて調べます。情報の正確性、完全性、最新性について一切の責を負いません。<br />
-        経路の表示はバス停留所を直線で結んでいます(走行する道路のデータはないため)<br />
-        データ中に含まれる深夜バスは当面休止中とのことです(2025年現在)。<br />
-        名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/blob/main/demo/map-app/README.md" target="_blank">詳細</a>)<br />
-        テキスト入力欄に停留所名を入力すると、部分一致する停留所の情報を表示します。<br />
-        テキスト入力欄に出発停留所名と到着停留所名をスペースで区切って入力すると経路を表示します（完全一致する停留所）。<br />
-        例）「いけした やだ」<br />
+    const filteredSystemSymbolMap = (busSystemFilter) => {
+        const workMap = {};
 
-        {/* 以下は、バス停留所名を入力するテキストボックス */}
-        <input value={text} style={{ "width": "200px" }} onChange={(event) => { setText(event.target.value) }} />
-        <button onClick={() => { updateQueryValue(text) }}>調べる</button>
-        <br />
+        systemSymbolList.map(systemSymbol => {
+            const busSystemArrayWork = busSystemArray.filter(s => (s["systemSymbol"] === systemSymbol));
+            // 停留所を入力して、バス系統を絞り込む場合
+            const work2 = busSystemArrayWork.filter(s => {
+                const code = s["systemCode"] + "," + s["routeCode"] + "," + s["directionCode"];
+                const routeData = busstopRelList.filter(rel => {
+                    return rel["systemKey"].startsWith(code)
+                });
+                if (routeData.filter(rel => (
+                    rel["busstopCode1"] === busSystemFilter ||
+                    rel["busstopCode2"] === busSystemFilter
+                )).length > 0) {
+                    return true;
+                }
+                return false;
+            });
+
+            /*
+            if (work2.length > 0) {
+                console.log("work2.length = " + work2.length + "   (" + systemSymbol + ")");               
+            } else {
+                console.log("work2.length = " + work2.length);
+            }
+            */
+            if (work2.length > 0) {
+                workMap[systemSymbol] = work2;
+            }
+        });
+
+        return workMap;
+    }
+
+
+    return (<>
+        <div style={{ padding: "0 10px 0 10px" }}>
+            <h3>名古屋市の市バスを調べてみよう</h3>
+            アルゴリズムの実演の意味で名古屋市の市バスについて調べます。情報の正確性、完全性、最新性について一切の責を負いません。<br />
+            経路の表示はバス停留所を直線で結んでいます(走行する道路のデータはないため)<br />
+            データ中に含まれる深夜バスは当面休止中とのことです(2025年現在)。<br />
+            名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/blob/main/demo/map-app/README.md" target="_blank">詳細</a>)<br />
+            テキスト入力欄に停留所名を入力すると、部分一致する停留所の情報を表示します。<br />
+            テキスト入力欄に出発停留所名と到着停留所名をスペースで区切って入力すると経路を表示します（完全一致する停留所）。<br />
+            例）「いけした やだ」<br />
+
+            {/* 以下は、バス停留所名を入力するテキストボックス */}
+            <input value={text} style={{ "width": "200px" }} onChange={(event) => { setText(event.target.value) }} />
+            <button onClick={() => { updateQueryValue(text); }}>調べる</button>
+            <button onClick={() => { setText(""); updateQueryValue(""); }}>クリア</button>
+            <br />
         </div>
         {mapDisplay(busstopList, posSeries)}
         <Mermaid src={mermaidData} />
-        <div style={{padding: "0 10px 0 10px"}}>
+        <div style={{ padding: "0 10px 0 10px" }}>
             <h3>バス系統を調べる</h3>
             <p>系統名は、系統記号の右に<span style={{ background: "#A0A0FF", margin: "0.5em", whiteSpace: "nowrap", paddingRight: "0.5em", paddingLeft: "0.5em", borderRadius: "1em" }}>起点 - 終点 経由地 方向</span>で示しています。
-            系統名をクリックすると、地図上に経路を表示します。
-            <br/>
-            バス系統をバス停留所で絞り込むことができます(&nbsp;
+                系統名をクリックすると、地図上に経路を表示します。
+                <br />
+                バス系統をバス停留所で絞り込むことができます(&nbsp;
                 <input value={busSystemFilterWork} style={{ "width": "200px" }} onChange={(event) => { setBusSystemFilterWork(event.target.value) }} />
-                <button onClick={() => { 
+                <button onClick={() => {
                     const busStop = busStopCodeArray.filter((x) => (x["busstopName"] === busSystemFilterWork || x["busstopKana"] === busSystemFilterWork));
                     if (busStop.length > 0) {
+                        const filterCode = busStop[0]["busstopCodeShort"];
+                        const filterd = filteredSystemSymbolMap(filterCode)
+                        setBusSystemFilter(filterd);
                         console.log("busstop found. len = " + busStop.length);
                         console.log("code = " + busStop[0]["busstopCodeShort"]);
-                        setBusSystemFilter(busStop[0]["busstopCodeShort"]);    
+                        console.log("filtered keys = " + Array.from(Object.keys(filterd)).length);
+                        setFilterMessage("バス停留所「" + busStopShortCodeDict[filterCode]["busstopName"] + "(" + busStopShortCodeDict[filterCode]["busstopKana"] + ")」で絞り混み");
                     }
                     else {
                         console.log("busstop not found. len == " + busStop.length);
-                        setBusSystemFilter("");
+                        setBusSystemFilter(null);
+                        setFilterMessage("該当なし");
                     }
-                    }}>バス系統絞り込み</button>
-                <button onClick={() => { 
-                        setBusSystemFilterWork("");
-                        setBusSystemFilter("");
-                    }}>クリア</button>
+                }}>バス系統絞り込み</button>
+                <button onClick={() => {
+                    setBusSystemFilterWork("");
+                    setBusSystemFilter(null);
+                    setFilterMessage("絞り込みなし");
+                }}>クリア</button>
                 &nbsp;)
             </p>
             <div style={{ width: "100%", height: "250px", "border": "1px solid #000000", overflowY: "scroll" }}>
+                {filterMessage}
                 <ul>
                     {
                         systemSymbolList.map(systemSymbol => {
-                            const busSystemArrayWork = busSystemArray.filter(s => (s["systemSymbol"] === systemSymbol));
-                            let work2 = busSystemArrayWork;
-                            if (busSystemFilter !== "") {
-                                // 停留所を入力して、バス系統を絞り込む場合
-                                work2 = work2.filter(s => {
-                                    const code = s["systemCode"] + "," + s["routeCode"] + "," + s["directionCode"];
-                                    const routeData = busstopRelList.filter(rel => {
-                                        return rel["systemKey"].startsWith(code)
-                                    });
-                                    if (routeData.filter(rel => (
-                                        rel["busstopCode1"] === busSystemFilter ||
-                                        rel["busstopCode2"] === busSystemFilter
-                                    )).length > 0) {
-                                        return true;
+                            const busSystemArrayWork = (() => {
+                                if (busSystemFilter !== null) {
+                                    if (systemSymbol in busSystemFilter) {
+                                        return busSystemFilter[systemSymbol];
+                                    } else {
+                                        return null;
                                     }
-                                    return false;
-                                });
-                            }
+                                } else {
+                                    return busSystemArray.filter(s => (s["systemSymbol"] === systemSymbol));
+                                }
+                            })();
 
-                            const work3 = work2.map(s => {
+                            if (busSystemArrayWork == null) {
+                                console.log("busSystemArrayWork is null");
+                                // バス系統の中で一つも該当する路線がなかった場合、バス系統自体表示しない
+                                return <></>;
+                            }
+                            console.log("busSystemArrayWork is not null");
+
+                            const work2 = busSystemArrayWork.map(s => {
                                 const code = s["systemCode"] + "," + s["routeCode"] + "," + s["directionCode"];
                                 return <a key={code} onClick={() => {
                                     updateQueryValue(code);
                                     // updateQueryValue("いけした");
                                 }}><span style={{ background: queryValue === code ? "#7070FF" : "#A0A0FF", margin: "0.5em", whiteSpace: "nowrap", paddingRight: "0.5em", paddingLeft: "0.5em", borderRadius: "1em" }}>{s["start"]} - {s["end"]} {s["via"]} {s["directionCode"]}</span></a>;
                             });
-                            if (work2.length === 0) {
-                                // バス系統の中で一つも該当する路線がなかった場合、バス系統自体表示しない
-                                return <></>;
-                            } else {
-                                return (
-                                    <li key={systemSymbol}>
-                                        {systemSymbol}
-                                        &nbsp;
-                                        {work3}
-                                    </li>
-                                );  
-                            }
+                            return (
+                                <li key={systemSymbol}>
+                                    {systemSymbol}
+                                    &nbsp;
+                                    {work2}
+                                </li>
+                            );
                         })
                     }
                 </ul>
