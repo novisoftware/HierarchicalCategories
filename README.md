@@ -460,8 +460,4 @@ npm start
 
 ビルドする際は ```npm build`` を実行します。
 
-<<<<<<< HEAD
-=======
-
 また、デモを https://novisoftware.github.io/demo/HierarchicalCategories/table-app/ に置いています。
->>>>>>> devlop2
