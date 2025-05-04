@@ -157,7 +157,7 @@ function App() {
             busstopListWork = busstopListWork.concat(busStopCodeArray.filter(busstop => (filterFunc(busstop, splited[index]))));
         }
         console.log("busstopList length = " + busstopList.length);
-        return busstopListWork;
+        return busstopListWork.map(x => ({"info": x, "url": busstopUrlDict[x["busstopCodeShort"]]}))
     }
 
     const updateQueryValue = (text) => {
@@ -204,7 +204,10 @@ function App() {
                         busStopCodeSet.add(rel["busstopCode2Detail"]);
                     });
 
-                    setBusstopList(Array.from(busStopCodeSet).map(code => (busStopCodeDict[code])));
+                    setBusstopList(Array.from(busStopCodeSet).map(code => {
+                        console.log("short code = " + busStopCodeDict[code]["busstopCodeShort"]);
+                        return {"info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]]}
+                    }));
 
                     lastBusStop = new Set();
                     rels.forEach((rel) => {
@@ -259,7 +262,24 @@ function App() {
                         busstopListWork1.push(code2);
                     }
                 });
-                const busstopListWork2 = busstopListWork1.map(code => (busStopCodeDict[code]));
+
+                const busstopListWork2 = busstopListWork1.map(code => {
+                    console.log("short code = " + busStopCodeDict[code]["busstopCodeShort"]);
+                    return {"info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]]}
+                });
+
+                /*
+                const busstopListWork2 = busstopListWork1.map(code => ({"info": busStopCodeDict[code], "url": busstopUrlDict[code]}));
+                */
+
+                    /*
+                    return busStopCodeDict[code];
+                    const d = {};
+                    d["info"] = busStopCodeDict[code];
+                    d["url"] = busstopUrlDict[code];
+                    return d;
+                });
+                    */
                 setBusstopList(busstopListWork2);
 
                 // 有向グラフ表示用のデータを作る

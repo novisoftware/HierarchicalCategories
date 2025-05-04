@@ -25,14 +25,21 @@ function mapDisplay(busstopList, polylineSeries) {
             />
             <>
                 {
-                    busstopList.map(busStop =>
-                        <Marker key={busStop["latitude"] + "_" + busStop["longitude"] + "_" + busStop["busstopName"] + "_" + busStop["busstopMemo"]} position={[parseFloat(busStop["latitude"]), parseFloat(busStop["longitude"])]}>
+                    busstopList.map(busStop => {
+                        const info = busStop["info"];
+                        const url = busStop["url"];
+
+                        return (<Marker key={info["latitude"] + "_" + info["longitude"] + "_" + info["busstopName"] + "_" + info["busstopMemo"]} position={[parseFloat(info["latitude"]), parseFloat(info["longitude"])]}>
                             <Popup>
-                                {busStop["busstopKana"]}<br />
-                                {busStop["busstopName"]}<br />
-                                {busStop["busstopMemo"]}
+                                <a href={url} target="_blank">
+                                    {info["busstopKana"]}<br />
+                                    {info["busstopName"]}
+                                </a>
+                                <br />
+                                {info["busstopMemo"]}
                             </Popup>
-                        </Marker>
+                        </Marker>);
+                    }
                     )
                 }
             </>
@@ -42,7 +49,7 @@ function mapDisplay(busstopList, polylineSeries) {
                         const [kind, polyline] = polylineData;
                         const color = kind === "bus" ? "blue" : "gray";
 
-                        return <Polyline pathOptions={{"color": color}} positions={polyline} />
+                        return <Polyline pathOptions={{ "color": color }} positions={polyline} />
                     }
                     )
                 }
@@ -50,4 +57,4 @@ function mapDisplay(busstopList, polylineSeries) {
         </MapContainer>);
 }
 
-export {mapDisplay};
+export { mapDisplay };

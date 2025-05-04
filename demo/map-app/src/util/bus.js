@@ -235,7 +235,7 @@ function read_busstop_order(rawCsv, busStopDict, busSystemDict) {
  * 名古屋市 市バス停留所URL
  */
 function read_busstop_url(rawCsv /* , busStopDict, busSystemDict */) {
-    const busstop_url_dict = [];
+    const busstop_url_dict = {};
 
     rawCsv.split("\n").forEach((line, index) => {
         if (index === 0) {
@@ -249,12 +249,10 @@ function read_busstop_url(rawCsv /* , busStopDict, busSystemDict */) {
         // 01000,相川一丁目,https://map.kotsu.city.nagoya.jp/map/QR.jsp?from=b_01000
 
         const busstop_code = items[0];
-        const busstop_name = items[1];
+        // 使用しない
+        // const busstop_name = items[1];
         const busstop_url = items[2];
-        busstop_url_dict.push({
-            "name": busstop_name,
-            "url": busstop_url,
-        });
+        busstop_url_dict[busstop_code] = busstop_url;
       }
     );
 
