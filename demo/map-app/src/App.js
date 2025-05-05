@@ -24,7 +24,6 @@ function App() {
     const [ini1, setIni1] = useState(false);
     const [ini2, setIni2] = useState(false);
     const [ini3, setIni3] = useState(false);
-    const [ini4, setIni4] = useState(false);
     // 地図上のバス停表示
     const [busstopList, setBusstopList] = useState([]);
     const [busSystemFilter, setBusSystemFilter] = useState(null);
@@ -167,8 +166,8 @@ function App() {
         const workPosSeries = [];
         let mermaidData = emptyMermaidData;
 
-        if (text.includes(" ")) {
-            const splited = text.split(/[　 ]/);
+        const splited = text.split(/[　 ]/);
+        if (splited.length > 1) {
             // 出発
             const busstopKanaFrom = splited[0];
             // 到着
@@ -225,7 +224,6 @@ function App() {
         }
         else {
             if (text.match(/^[,\d]+$/) == null) {
-                const splited = [text];
                 setBusstopList(getBusstopList(splited));
             } else {
                 // 路線データを取り出す
