@@ -168,7 +168,7 @@ function App() {
         let mermaidData = emptyMermaidData;
 
         if (text.includes(" ")) {
-            const splited = text.split(" ");
+            const splited = text.split(/[　 ]/);
             // 出発
             const busstopKanaFrom = splited[0];
             // 到着
