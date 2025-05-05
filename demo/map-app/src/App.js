@@ -168,6 +168,7 @@ function App() {
 
         const splited = text.split(/[　 ]/);
         if (splited.length > 1) {
+            // テキスト入力欄に出発、到着のバス停留所が指定された場合
             // 出発
             const busstopKanaFrom = splited[0];
             // 到着
@@ -223,18 +224,15 @@ function App() {
             }
         }
         else {
-            if (text.match(/^[,\d]+$/) == null) {
-                setBusstopList(getBusstopList(splited));
-            } else {
+            if (text.match(/^[,\d]+$/) !== null) {
+                // 路線情報が指定された場合
                 // 路線データを取り出す
-                // console.log("経路", text);
                 const routeId = text;
                 const routeData = busstopRelList.filter(rel => {
                     return rel["systemKey"].startsWith(routeId)
                 });
 
-                // 地図プロット用のデータを作る
-                // console.log("routeData.length", routeData.length);
+                // 地図上へのプロット用のデータを作る
                 const work = routeData.map(rel => {
                     const code1 = rel["busstopCode1Detail"];
                     const code2 = rel["busstopCode2Detail"];
@@ -242,10 +240,9 @@ function App() {
                     const latlng2 = busStopCodeDict[code2];
                     return ["bus", [[latlng1["latitude"], latlng1["longitude"]], [latlng2["latitude"], latlng2["longitude"]]]]
                 });
-                // workPosSeries.push([])
                 work.forEach(x => { workPosSeries.push(x) });
 
-                // ピン表示
+                // 地図上へのピン表示
                 const busstopSet = new Set();
                 const busstopListWork1 = [];
                 routeData.map(rel => {
@@ -265,19 +262,6 @@ function App() {
                     console.log("short code = " + busStopCodeDict[code]["busstopCodeShort"]);
                     return {"info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]]}
                 });
-
-                /*
-                const busstopListWork2 = busstopListWork1.map(code => ({"info": busStopCodeDict[code], "url": busstopUrlDict[code]}));
-                */
-
-                    /*
-                    return busStopCodeDict[code];
-                    const d = {};
-                    d["info"] = busStopCodeDict[code];
-                    d["url"] = busstopUrlDict[code];
-                    return d;
-                });
-                    */
                 setBusstopList(busstopListWork2);
 
                 // 有向グラフ表示用のデータを作る
@@ -291,6 +275,9 @@ function App() {
                 mermaidData = pathToMermaid(path);
                 */
                 mermaidData = emptyMermaidData;
+            } else {
+                // テキスト入力欄にバス停留所が1つ入力された場合
+                setBusstopList(getBusstopList(splited));
             }
         }
         console.log("updated 0");
