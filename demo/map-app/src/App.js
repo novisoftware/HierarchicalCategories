@@ -149,7 +149,7 @@ function App() {
                 if (!(busstopCode1 in codeMapFrom) || (!(busstopCode1 in codeMapTo))) {
                     isMultiStart = true;
                 } else {
-                    if (codeMapFrom[busstopCode1].size === 1 &&  codeMapTo[busstopCode1].size === 1) {
+                    if (codeMapFrom[busstopCode1].size === 1 && codeMapTo[busstopCode1].size === 1) {
                         if (Array.from(codeMapFrom[busstopCode1])[0] === Array.from(codeMapTo[busstopCode1])[0]) {
                             isMultiStart = false;
                         }
@@ -163,7 +163,7 @@ function App() {
                 if (!(busstopCode2 in codeMapFrom) || (!(busstopCode2 in codeMapTo))) {
                     isMultiEnd = true;
                 } else {
-                    if (codeMapFrom[busstopCode2].size === 1 &&  codeMapTo[busstopCode2].size === 1) {
+                    if (codeMapFrom[busstopCode2].size === 1 && codeMapTo[busstopCode2].size === 1) {
                         if (Array.from(codeMapFrom[busstopCode2])[0] === Array.from(codeMapTo[busstopCode2])[0]) {
                             isMultiEnd = false;
                         }
@@ -252,7 +252,7 @@ function App() {
             busstopListWork = busstopListWork.concat(busStopCodeArray.filter(busstop => (filterFunc(busstop, splited[index]))));
         }
         console.log("busstopList length = " + busstopList.length);
-        return busstopListWork.map(x => ({"info": x, "url": busstopUrlDict[x["busstopCodeShort"]]}))
+        return busstopListWork.map(x => ({ "info": x, "url": busstopUrlDict[x["busstopCodeShort"]] }))
     }
 
     const updateQueryValue = (text) => {
@@ -302,7 +302,7 @@ function App() {
 
                     setBusstopList(Array.from(busStopCodeSet).map(code => {
                         console.log("short code = " + busStopCodeDict[code]["busstopCodeShort"]);
-                        return {"info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]]}
+                        return { "info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]] }
                     }));
 
                     lastBusStop = new Set();
@@ -356,7 +356,7 @@ function App() {
 
                 const busstopListWork2 = busstopListWork1.map(code => {
                     console.log("short code = " + busStopCodeDict[code]["busstopCodeShort"]);
-                    return {"info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]]}
+                    return { "info": busStopCodeDict[code], "url": busstopUrlDict[busStopCodeDict[code]["busstopCodeShort"]] }
                 });
                 setBusstopList(busstopListWork2);
 
@@ -426,14 +426,26 @@ function App() {
     return (<>
         <div style={{ padding: "0 10px 0 10px" }}>
             <h3>名古屋市の市バスを調べてみよう</h3>
-            アルゴリズムの実演の意味で名古屋市の市バスについて調べます。情報の正確性、完全性、最新性について一切の責を負いません。<br />
-            (調べる必要がある方は<a href="https://www.kotsu.city.nagoya.jp/jp/pc/">名古屋市交通局</a>の<a href="https://www.kotsu.city.nagoya.jp/jp/pc/route/" target="_blank">なごや乗換ナビ</a>にどうぞ)<br />
-            データ中に含まれる深夜バスは当面休止中とのことです(2025年現在)。<br />
-            名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/blob/main/demo/map-app/README.md" target="_blank">詳細</a>)<br />
-            テキスト入力欄に停留所名を1つ入力すると、入力が部分一致する停留所の情報を表示します。<br />
-            テキスト入力欄に出発停留所名と到着停留所名の2つをスペースで区切って入力すると経路を表示します（入力が完全一致する停留所から探します）。<br />
-            経路の表示はバス停留所を直線で結んでいます(どの道路を走行しているかのデータはないため)<br />
-            例）「いけした やだ」<br />
+            プログラムの実演みたいな意味で名古屋市の市バスについて調べます。情報の正確性、完全性、最新性や結果の最適性について一切の責を負いません。<br />
+            (きちんと調べる必要がある方は<a href="https://www.kotsu.city.nagoya.jp/jp/pc/">名古屋市交通局</a>の<a href="https://www.kotsu.city.nagoya.jp/jp/pc/route/" target="_blank">なごや乗換ナビ</a>をどうぞ)
+            <ul>
+                <li>
+                    名古屋市交通局によりCreative Commons Attribution 4.0 Internationalで公開されたオープンデータを使用しています(<a href="https://github.com/novisoftware/HierarchicalCategories/blob/main/demo/map-app/README.md" target="_blank">詳細</a>)
+                </li>
+                <li>
+                    データ中に含まれる深夜バスは当面休止中とのことです(2025年現在)。
+                </li>
+                <li>
+                    テキスト入力欄に停留所名を1つ入力すると、入力が部分一致する停留所の情報を表示します。
+                </li>
+                <li>
+                    テキスト入力欄に出発停留所名と到着停留所名の2つをスペースで区切って入力すると経路を表示します（入力が完全一致する停留所から探します）。
+                </li>
+                <li>
+                    経路の表示はバス停留所を直線で結んでいます(どの道路を走行しているかのデータはないため)<br />
+                    例）「いけした やだ」
+                </li>
+            </ul>
 
             {/* 以下は、バス停留所名を入力するテキストボックス */}
             <input value={text} style={{ "width": "200px" }} onChange={(event) => { setText(event.target.value) }} />
