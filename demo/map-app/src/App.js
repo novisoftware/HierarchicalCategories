@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import 'leaflet/dist/leaflet.css';
 import { read_busstop_latitude_longitude, read_bus_system, read_busstop_order, read_busstop_url } from './util/bus.js';
+import { read_subway } from './util/subway.js';
 import { searchRel2 } from './util/relations.js';
 import { mapDisplay } from './util/map.js';
 import { Mermaid } from './util/mermaid.js'
@@ -24,11 +25,19 @@ function App() {
     const [ini1, setIni1] = useState(false);
     const [ini2, setIni2] = useState(false);
     const [ini3, setIni3] = useState(false);
+    // 地下鉄等の情報
+    const [subwayStationDict, setSubwayStationDict] = useState({});
+    const [subwayRelList, setSubwayRelList] = useState([]);
+    const [ini4, setIni4] = useState(false);
     // 地図上のバス停表示
     const [busstopList, setBusstopList] = useState([]);
     const [busSystemFilter, setBusSystemFilter] = useState(null);
     const [busSystemFilterWork, setBusSystemFilterWork] = useState("");
     const [filterMessage, setFilterMessage] = useState("絞り込みなし");
+    // 地図上の地下鉄駅表示
+    const [subwayStationList, setSubwayStationList] = useState([]);
+    // 地図上の地下鉄駅表示
+    const [subwayLinePath, setSubwayLinePath] = useState([]);   
     // 検索テキスト
     const [text, setText] = useState("");
     // 検索用内部文字列
@@ -83,7 +92,38 @@ function App() {
                 setIni3(true);
             })
             .catch(error => console.error('Error fetching data:', error));
-    }, [ini1, ini2, ini3]);
+        fetch(`${process.env.PUBLIC_URL}/data/subway/nagoya_subway.csv`)
+            .then(response => response.text())
+            .then(csv => {
+                const [r1, r2] = read_subway(csv);
+                setSubwayStationDict(r1);
+                setSubwayRelList(r2);
+                setIni4(true);
+
+                // 仮・駅の一覧
+                const workList = [];
+                Object.keys(subwayStationDict).forEach((k) => {
+                    workList.push(subwayStationDict[k]);
+                });
+                setSubwayStationList(workList);
+
+                console.log("地下鉄等のルート一覧");
+                console.log("r2.length = " + r2.length);
+                // 仮・ルートの一覧
+                const workPosList = [];
+                r2.forEach(r => {
+                    const pos1 = [r1[r["from"]]["lat"], r1[r["from"]]["lng"]];
+                    const pos2 = [r1[r["to"]]["lat"], r1[r["to"]]["lng"]];
+                    if (pos1 !== null && pos2 !== null) {
+                        console.log("add");
+                        workPosList.push(["subway", [pos2, pos1]]);
+                    }
+                    console.log("no add");
+                });
+                setSubwayLinePath(workPosList);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+        }, [ini1, ini2, ini3, ini4]);
 
     // 以下の関数は、停留所コードから「停留所名（停留所かな）:停留所コード」の形式の文字列に変換する関数
     const busstopCode2str = (busstopCode) => {
@@ -453,7 +493,7 @@ function App() {
             <button onClick={() => { setText(""); updateQueryValue(""); }}>クリア</button>
             <br />
         </div>
-        {mapDisplay(busstopList, posSeries)}
+        {mapDisplay(busstopList, posSeries, subwayStationList, subwayLinePath)}
         <Mermaid src={mermaidData} />
         <div style={{ padding: "0 10px 0 10px" }}>
             <h3>バス系統を調べる</h3>
