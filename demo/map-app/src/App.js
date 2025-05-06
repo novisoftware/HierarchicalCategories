@@ -94,9 +94,35 @@ function App() {
 
     const pathToMermaid = (path) => {
         const isDebug = false;
+        // 既出のバス停留所(乗降コード付き): ルート出発側
+        const knownBusstop1 = new Set();
+        // 既出のバス停留所(乗降コード付き): ルート到着側
+        const knownBusstop2 = new Set();
+        path.forEach(([busstopCode1, busstopCode2, rels]) => {
+            rels.forEach((rel) => {
+                knownBusstop1.add(rel["busstopCode1Detail"]);
+                knownBusstop2.add(rel["busstopCode2Detail"]);
+            });
+        });
+
+        // バス停留所と乗降場所の対応
+        const codeMapFrom = {};
+        const codeMapTo = {};
+        path.forEach(([busstopCode1, busstopCode2, rels]) => {
+            codeMapFrom[busstopCode1] = new Set();
+            codeMapTo[busstopCode2] = new Set();
+            rels.forEach((rel) => {
+                codeMapFrom[busstopCode1].add(rel["busstopCode1Detail"]);
+                codeMapTo[busstopCode2].add(rel["busstopCode2Detail"]);
+            });
+        });
+
         let output = "";
 
         console.log("CHECK");
+
+        // 出力済のルート
+        const knownRoute = new Set();
 
         // 注:
         // TB (または TD )で上から下へのグラフ
@@ -117,8 +143,78 @@ function App() {
                     + via
                     + (isDebug ? ("-" + system["directionCode"]) : (""));
 
-                output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
-                output += ("\n")
+                // 出発と到着の乗降口番号が1つでない場合は、経路ごとに分けて表示する
+                let isMultiStart = false;
+                let isMultiEnd = false;
+                if (!(busstopCode1 in codeMapFrom) || (!(busstopCode1 in codeMapTo))) {
+                    isMultiStart = true;
+                } else {
+                    if (codeMapFrom[busstopCode1].size === 1 &&  codeMapTo[busstopCode1].size === 1) {
+                        if (Array.from(codeMapFrom[busstopCode1])[0] === Array.from(codeMapTo[busstopCode1])[0]) {
+                            isMultiStart = false;
+                        }
+                        else {
+                            isMultiStart = true;
+                        }
+                    } else {
+                        isMultiStart = true;
+                    }
+                }
+                if (!(busstopCode2 in codeMapFrom) || (!(busstopCode2 in codeMapTo))) {
+                    isMultiEnd = true;
+                } else {
+                    if (codeMapFrom[busstopCode2].size === 1 &&  codeMapTo[busstopCode2].size === 1) {
+                        if (Array.from(codeMapFrom[busstopCode2])[0] === Array.from(codeMapTo[busstopCode2])[0]) {
+                            isMultiEnd = false;
+                        }
+                        else {
+                            isMultiEnd = true;
+                        }
+                    } else {
+                        isMultiEnd = true;
+                    }
+                }
+                if (isMultiStart && isMultiEnd) {
+                    const code1 = rel["busstopCode1Detail"];
+                    const code2 = rel["busstopCode2Detail"];
+                    const st1 = busStopCodeDict[code1]["busstopName"] + busStopCodeDict[code1]["busstopMemo"] + "から";
+                    const st2 = busStopCodeDict[code2]["busstopName"] + busStopCodeDict[code2]["busstopMemo"] + "に";
+                    const outwork1 = ("    " + busstopCode2str(busstopCode1) + " --> " + st1 + ";\n");
+                    if (!knownRoute.has(outwork1)) {
+                        knownRoute.add(outwork1);
+                        output += outwork1;
+                    }
+                    output += ("    " + st1 + " -- " + systemDisp + " --> " + st2);
+                    output += (";\n")
+                    const outwork2 = ("    " + st2 + " --> " + busstopCode2str(busstopCode2) + ";\n");
+                    if (!knownRoute.has(outwork2)) {
+                        knownRoute.add(outwork2);
+                        output += outwork2;
+                    }
+                } else if (isMultiStart && !isMultiEnd) {
+                    const code1 = rel["busstopCode1Detail"];
+                    const st1 = busStopCodeDict[code1]["busstopName"] + busStopCodeDict[code1]["busstopMemo"] + "から";
+                    const outwork1 = ("    " + busstopCode2str(busstopCode1) + " --> " + st1 + ";\n");
+                    if (!knownRoute.has(outwork1)) {
+                        knownRoute.add(outwork1);
+                        output += outwork1;
+                    }
+                    output += ("    " + st1 + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
+                    output += (";\n")
+                } else if (!isMultiStart && isMultiEnd) {
+                    const code2 = rel["busstopCode2Detail"];
+                    const st2 = busStopCodeDict[code2]["busstopName"] + busStopCodeDict[code2]["busstopMemo"] + "に";
+                    output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + st2);
+                    output += (";\n")
+                    const outwork2 = ("    " + st2 + " --> " + busstopCode2str(busstopCode2) + ";\n");
+                    if (!knownRoute.has(outwork2)) {
+                        knownRoute.add(outwork2);
+                        output += outwork2;
+                    }
+                } else {
+                    output += ("    " + busstopCode2str(busstopCode1) + " -- " + systemDisp + " --> " + busstopCode2str(busstopCode2));
+                    output += (";\n")
+                }
             })
         });
 
